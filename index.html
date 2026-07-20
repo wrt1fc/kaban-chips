@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ООО «КАБАН БЛЯЯЯЯЯ» — чипсы кабана</title>
+<style>
+  :root{
+    --bg:#150f0a;
+    --panel:#2e1f14;
+    --panel2:#3b2718;
+    --line:#5a3c22;
+    --gold:#ffb43c;
+    --gold2:#ffd98a;
+    --red:#ff4d4d;
+    --green:#6ee36e;
+    --txt:#f4e6d4;
+    --dim:#a98a6b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;height:100%}
+  body{
+    background:
+      radial-gradient(circle at 50% -10%, #4a2f16 0%, transparent 55%),
+      repeating-linear-gradient(90deg,#1a120c 0 38px,#160f0a 38px 76px),
+      var(--bg);
+    color:var(--txt);
+    font-family:"Segoe UI",Roboto,system-ui,sans-serif;
+    overflow:hidden;user-select:none;
+  }
+  body.rushing{animation:rushbg .6s infinite alternate}
+  @keyframes rushbg{to{background-color:#3a1208}}
+
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+  .screen.on{display:flex}
+
+  /* ============ ВЫВЕСКА ============ */
+  .sign{
+    background:linear-gradient(#3d2716,#2a1a0e);
+    border:6px solid var(--line);border-radius:18px;
+    box-shadow:0 0 0 4px #1a1109, 0 18px 50px rgba(0,0,0,.7), inset 0 0 60px rgba(255,180,60,.08);
+    padding:26px 32px;max-width:780px;text-align:center;position:relative;
+  }
+  .sign:before,.sign:after{content:"";position:absolute;top:-26px;width:10px;height:26px;background:var(--line)}
+  .sign:before{left:18%} .sign:after{right:18%}
+  .ooo{font-size:13px;letter-spacing:.5em;color:var(--dim);text-transform:uppercase}
+  .signtitle{
+    font-size:clamp(28px,7vw,62px);font-weight:900;line-height:1;margin:6px 0 4px;
+    color:var(--gold);text-shadow:0 0 18px rgba(255,180,60,.55), 0 4px 0 #6b3f12;animation:flick 4s infinite;
+  }
+  @keyframes flick{0%,93%,100%{opacity:1}94%{opacity:.35}95%{opacity:1}96%{opacity:.5}97%{opacity:1}}
+  .sub{color:var(--gold2);font-size:clamp(13px,3vw,17px);margin-bottom:12px}
+  .boar-big{font-size:clamp(56px,15vw,100px);line-height:1;margin:6px 0;display:block;animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-10px) rotate(-3deg)}}
+  .rules{
+    text-align:left;background:rgba(0,0,0,.3);border:2px dashed var(--line);
+    border-radius:12px;padding:12px 16px;margin:12px auto 0;font-size:14.5px;line-height:1.6;max-width:640px;
+  }
+  .rules b{color:var(--gold)}
+  .best{
+    margin-top:12px;border:2px solid var(--gold);border-radius:12px;padding:8px 14px;
+    background:rgba(255,180,60,.08);font-size:14px;font-weight:800;color:var(--gold2);display:none;
+  }
+  .best.on{display:block}
+  .btn{
+    margin-top:16px;background:linear-gradient(#ffb43c,#e07b12);color:#2a1600;border:none;border-radius:14px;
+    padding:15px 32px;font-size:clamp(16px,4vw,22px);font-weight:900;cursor:pointer;
+    box-shadow:0 7px 0 #8a4b09, 0 12px 26px rgba(0,0,0,.5);transition:transform .06s, box-shadow .06s;font-family:inherit;
+  }
+  .btn:active{transform:translateY(5px);box-shadow:0 2px 0 #8a4b09}
+
+  /* ============ ИГРА ============ */
+  #game{justify-content:flex-start;padding:0}
+  .hud{
+    width:100%;display:flex;gap:7px;flex-wrap:wrap;justify-content:center;align-items:center;
+    padding:7px 10px;background:linear-gradient(#2a1a0e,#1a1109);border-bottom:3px solid var(--line);
+  }
+  .stat{background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:5px 11px;font-size:14px;font-weight:800;white-space:nowrap}
+  .stat span{color:var(--gold)}
+  .stat.bad span{color:var(--red)}
+  .stat.tap{cursor:pointer}
+  .timerbar{width:100%;height:8px;background:#1a1109;flex:0 0 auto}
+  .timerbar > i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--gold));width:100%;transition:width .2s linear}
+
+  .counter{flex:1;width:100%;max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:9px;padding:9px;min-height:0}
+  .queue{display:flex;gap:9px;justify-content:center;align-items:stretch;min-height:196px;flex-wrap:wrap}
+  .cust{
+    background:linear-gradient(#3b2718,#291a10);border:3px solid var(--line);border-radius:16px;
+    padding:8px 9px;width:184px;cursor:pointer;position:relative;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    animation:pop .25s ease-out;transition:border-color .15s, transform .15s;
+  }
+  @keyframes pop{from{transform:translateY(24px) scale(.85);opacity:0}}
+  .cust.sel{border-color:var(--gold);transform:translateY(-6px);box-shadow:0 0 22px rgba(255,180,60,.35)}
+  .cust.pay{background:linear-gradient(#3d3418,#2a2310);border-color:#c9a02c}
+  .cust.pay.sel{border-color:var(--gold)}
+  .cust.leaving{animation:away .4s ease-in forwards}
+  @keyframes away{to{transform:translateY(30px) scale(.7);opacity:0}}
+  .cust .face{font-size:40px;line-height:1}
+  .cust .say{font-size:11px;color:var(--dim);text-align:center;min-height:24px;line-height:1.2;font-style:italic}
+  .cust .order{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+  .oitem{background:#1c120b;border:2px solid #6b4726;border-radius:8px;padding:2px 6px;font-size:15px;font-weight:800;white-space:nowrap}
+  .oitem.done{border-color:var(--green);color:var(--green)}
+  .money-note{font-size:12px;line-height:1.45;text-align:center}
+  .money-note b{color:var(--gold);font-size:15px}
+  .money-note .g{color:var(--green)}
+  .pat{width:100%;height:7px;background:#1a1109;border-radius:4px;overflow:hidden;margin-top:2px}
+  .pat > i{display:block;height:100%;background:var(--green);transition:width .1s linear}
+  .hint{position:absolute;top:-9px;left:-9px;background:var(--gold);color:#2a1600;font-weight:900;font-size:12px;border-radius:7px;padding:1px 6px}
+  .badge{position:absolute;top:-10px;right:-8px;font-size:18px;animation:bob 1s infinite}
+  .empty{color:var(--dim);font-size:17px;align-self:center;font-style:italic}
+
+  .tray{background:rgba(0,0,0,.35);border:3px dashed var(--line);border-radius:14px;min-height:60px;display:flex;align-items:center;gap:7px;padding:7px 12px;flex-wrap:wrap}
+  .tray.cash{border-color:#c9a02c;background:rgba(255,180,60,.07)}
+  .tray .lbl{color:var(--dim);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+  .tray .sum{margin-left:auto;font-size:17px;font-weight:900;color:var(--gold)}
+  .chip{background:#4a2f16;border:2px solid var(--gold);border-radius:9px;padding:3px 9px;font-size:17px;cursor:pointer;animation:pop .18s}
+  .chip.c{font-size:14px;font-weight:900;color:var(--gold2)}
+  .chip:active{transform:scale(.9)}
+
+  .shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .shelf.cash{grid-template-columns:repeat(5,1fr)}
+  .pack{
+    background:linear-gradient(#4a2f16,#33200f);border:3px solid var(--line);border-radius:14px;
+    padding:8px 4px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;
+    transition:transform .06s;position:relative;
+  }
+  .pack:active{transform:scale(.94);border-color:var(--gold)}
+  .pack .em{font-size:29px;line-height:1}
+  .pack .nm{font-size:12px;font-weight:800;line-height:1.15}
+  .pack .key{position:absolute;top:3px;right:5px;font-size:10px;color:var(--dim)}
+  .pack.bill{background:linear-gradient(#2f4a2a,#1d2f1a);border-color:#4f7a45}
+  .pack.bill .em{font-size:22px}
+  .pack.bill .nm{font-size:15px;color:#c6f0bd}
+  .pack.coin{background:linear-gradient(#4a4116,#302a0f);border-color:#7a6c26}
+
+  .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn.wide{margin:0;width:100%;padding:13px 8px;font-size:17px;border-radius:12px}
+  .btn.red{background:linear-gradient(#ff7b6b,#c03a22);color:#2a0d06;box-shadow:0 6px 0 #7a2412}
+  .btn.red:active{box-shadow:0 2px 0 #7a2412}
+  .btn.green{background:linear-gradient(#8ee87e,#3f9b2c);color:#0d2a06;box-shadow:0 6px 0 #24630f}
+  .btn.green:active{box-shadow:0 2px 0 #24630f}
+
+  /* НАПЛЫВ */
+  #rush{
+    position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:6;pointer-events:none;
+    background:linear-gradient(#ff5b3c,#b81f00);color:#fff;font-weight:900;font-size:clamp(16px,4.6vw,26px);
+    padding:8px 22px;border-radius:14px;border:3px solid #ffd0a0;box-shadow:0 8px 30px rgba(255,60,0,.6);
+    display:none;white-space:nowrap;text-shadow:0 2px 4px rgba(0,0,0,.5);
+  }
+  #rush.on{display:block;animation:shake .35s infinite alternate}
+  @keyframes shake{from{transform:translateX(-50%) rotate(-1.5deg) scale(1)}to{transform:translateX(-50%) rotate(1.5deg) scale(1.05)}}
+
+  #pops{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .pop{position:absolute;font-weight:900;font-size:25px;text-shadow:0 2px 8px #000;animation:up 1.1s ease-out forwards;white-space:nowrap}
+  @keyframes up{to{transform:translateY(-90px);opacity:0}}
+  .toast{
+    position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+    background:#2a1a0e;border:2px solid var(--line);border-radius:12px;padding:9px 16px;
+    font-weight:800;font-size:15px;max-width:92%;text-align:center;animation:fade 2.2s forwards;pointer-events:none;z-index:5;
+  }
+  @keyframes fade{0%{opacity:0;transform:translate(-50%,14px)}12%,75%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+
+  /* ============ КАРТОЧКИ ============ */
+  .card{
+    background:linear-gradient(#2e1f14,#1f150d);border:4px solid var(--line);border-radius:18px;
+    padding:20px;max-width:720px;width:100%;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.6);
+  }
+  .card h2{margin:0 0 4px;font-size:clamp(21px,5.5vw,33px);color:var(--gold)}
+  .card .lead{color:var(--dim);margin:0 0 14px;font-size:15px;font-style:italic}
+  .rows{text-align:left;font-size:16px;line-height:1.95;border-top:2px dashed var(--line);border-bottom:2px dashed var(--line);padding:8px 0;margin-bottom:13px}
+  .rows div{display:flex;justify-content:space-between;gap:10px}
+  .rows b{color:var(--gold)}
+  .rows .neg b{color:var(--red)}
+  .rows .tot{font-size:19px;font-weight:900;border-top:1px solid var(--line);padding-top:6px;margin-top:4px}
+  .newrec{color:var(--green);font-weight:900;font-size:17px;margin-bottom:10px;animation:bob 1s infinite}
+  .ups{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:6px}
+  .up{background:var(--panel2);border:3px solid var(--line);border-radius:13px;padding:9px 11px;text-align:left;cursor:pointer;transition:border-color .12s}
+  .up:hover{border-color:var(--gold)}
+  .up.no{opacity:.4;cursor:not-allowed}
+  .up .t{font-weight:900;font-size:15px}
+  .up .d{font-size:12px;color:var(--dim);line-height:1.35;margin:2px 0 4px}
+  .up .p{font-weight:900;color:var(--gold);font-size:14px}
+  .up .lv{float:right;font-size:11px;color:var(--dim)}
+  @media(max-width:560px){
+    .ups{grid-template-columns:1fr}
+    .cust{width:calc(50% - 5px);max-width:184px}
+    .shelf.cash{grid-template-columns:repeat(3,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= ПРИВЕТСТВИЕ ================= -->
+<div class="screen on" id="welcome">
+  <div class="sign">
+    <div class="ooo">Общество с ограниченной ответственностью</div>
+    <div class="signtitle">«КАБАН БЛЯЯЯЯЯ»</div>
+    <div class="sub">🥔 ЧИПСЫ КАБАНА — ХРУСТИМ С 1997 ГОДА 🥔</div>
+    <span class="boar-big">🐗</span>
+    <div class="sub" style="margin:0">Добро пожаловать, дорогой ты наш покупатель.<br>Касса вон там. Не толпимся, бля.</div>
+    <div class="rules">
+      <b>ТЫ</b> — кабан за прилавком. Твоя задача — не обосраться.<br>
+      🔸 Кликай пачки на полке, собери <b>ровно заказ</b> → жми <b>ВЫДАТЬ</b>.<br>
+      🔸 Клиент суёт купюру — со 2-й смены надо <b>отсчитать сдачу</b> купюрами. Точно — жирные чаевые.<br>
+      🔸 Ошибся, недодал сдачи или клиент устал ждать — минус <b>нервы</b>. Кончились — кабан в запое.<br>
+      🔸 Раз за смену случается <b>🔥 НАПЛЫВ</b>: 10 секунд толпы и двойной ценник. Держись.<br>
+      🔸 В конце смены платим <b>аренду</b>. Не заплатил — ООО закрыли нахуй.<br>
+      🔸 Клавиши: <b>1—6</b> товар / купюры, <b>Q W E R</b> клиент, <b>Enter</b> выдать, <b>Backspace</b> убрать, <b>M</b> музыка.
+    </div>
+    <div class="best" id="bestBox"></div>
+    <button class="btn" id="startBtn">ОТКРЫТЬ МАГАЗИН 🔑</button>
+    <button class="btn" id="muteBtn" style="padding:15px 20px">🔊</button>
+  </div>
+</div>
+
+<!-- ================= ИГРА ================= -->
+<div class="screen" id="game">
+  <div class="hud">
+    <div class="stat">💰 <span id="sMoney">0</span> ₽</div>
+    <div class="stat">📅 Смена <span id="sDay">1</span></div>
+    <div class="stat">🏦 Аренда <span id="sRent">0</span> ₽</div>
+    <div class="stat" id="nervStat">🧠 <span id="sNerv">❤❤❤❤❤</span></div>
+    <div class="stat">⏱ <span id="sTime">60</span> с</div>
+    <div class="stat tap" id="muteBtn2">🔊</div>
+  </div>
+  <div class="timerbar"><i id="tbar"></i></div>
+
+  <div class="counter">
+    <div class="queue" id="queue"></div>
+    <div class="tray" id="tray"><span class="lbl">Прилавок:</span></div>
+    <div class="shelf" id="shelf"></div>
+    <div class="acts">
+      <button class="btn wide red" id="clearBtn">СМЕСТИ НАХУЙ 🧹</button>
+      <button class="btn wide" id="serveBtn">ВЫДАТЬ 🤝</button>
+    </div>
+  </div>
+  <div id="rush">🔥 НАПЛЫВ! ЦЕНЫ ×2 — <span id="rushT">10</span></div>
+  <div id="pops"></div>
+</div>
+
+<!-- ================= КОНЕЦ СМЕНЫ ================= -->
+<div class="screen" id="shiftend">
+  <div class="card">
+    <h2 id="seTitle">СМЕНА ЗАКРЫТА</h2>
+    <p class="lead" id="seLead">Кабан считает бабки слюнявым пятаком.</p>
+    <div class="rows" id="seRows"></div>
+    <div style="font-size:14px;color:var(--dim);margin-bottom:8px">ЗАКУПКА И МОДЕРНИЗАЦИЯ (в кассе: <b style="color:var(--gold)" id="seCash">0</b> ₽)</div>
+    <div class="ups" id="ups"></div>
+    <button class="btn" id="nextBtn">СЛЕДУЮЩАЯ СМЕНА ➡️</button>
+  </div>
+</div>
+
+<!-- ================= КОНЕЦ ИГРЫ ================= -->
+<div class="screen" id="over">
+  <div class="card">
+    <span class="boar-big" id="ovEmoji">🐗</span>
+    <h2 id="ovTitle">ВСЁ, ПРИЕХАЛИ</h2>
+    <p class="lead" id="ovLead"></p>
+    <div class="newrec" id="ovRec" style="display:none">🏆 НОВЫЙ РЕКОРД, БЛЯ! 🏆</div>
+    <div class="rows" id="ovRows"></div>
+    <button class="btn" id="againBtn">ЕЩЁ РАЗ, БЛЯ 🔁</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- ТОВАР ---------------- */
+const FLAVORS = [
+  {em:"🦀", nm:"Краб бля"},
+  {em:"🥓", nm:"Бекон (предательство)"},
+  {em:"🧅", nm:"Лук-сметана"},
+  {em:"🌶️", nm:"Паприка ебать"},
+  {em:"🧀", nm:"Сыр сука"},
+  {em:"🐟", nm:"Вобла"},
+];
+const DENOMS = [
+  {v:10,   em:"🪙", cls:"coin"},
+  {v:50,   em:"🪙", cls:"coin"},
+  {v:100,  em:"💵", cls:"bill"},
+  {v:500,  em:"💵", cls:"bill"},
+  {v:1000, em:"💶", cls:"bill"},
+];
+const BILLS = [100,200,500,1000,2000,5000];
+
+const FACES = ["🧔","👵","👮","🧛","🐻","🦊","🐺","👨‍🚀","🤠","👷","🧙","🤡","👽","🧟","🐕","🦝"];
+const LINES = [
+  "Э, кабан, живее!","Мне на сдачу похуй.","Пивас есть? Ладно, чипсы.",
+  "Я на такси приехал вообще-то.","Быстрее, у меня матч.","Мамка сказала эти брать.",
+  "Только не просроченные.","Хрустеть буду в кинотеатре, бля.","Я тут с 8 утра стою.",
+  "Оплата картой? Нет? Пиздец.","Дай пакетик, дай пакетик.","Слышь, а ты реально кабан?",
+  "Мне для собаки. Себе тоже.","Смена у меня, некогда.","Это на день рождения, не осуждай."
+];
+const PAYLINES = ["Сдачу давай.","Мелочи нет, извини.","Только не монетами!","Сдачу до копейки, я считаю.","Ну? Считай давай.","Крупная, других нет."];
+const HAPPY = ["Ну наконец-то, бля!","Красава, кабан.","Вот это сервис.","Хрум-хрум, спасибо.","Уважаю."];
+const ANGRY = ["Ты чё мне подсунул?!","Я такое не просил, дебил.","Верни бабки!","Ты вообще читать умеешь?"];
+const LEFT  = ["Да ну тебя нахуй.","Всё, я в «Пятёрочку».","Час стою! Час!","Тьфу, кабан."];
+const ROBBED = ["Ты меня наебать решил?!","Где остальное, сука?!","Считать не умеешь?!","Это грабёж средь бела дня!"];
+
+/* ---------------- АПГРЕЙДЫ ---------------- */
+const UPGRADES = [
+  {id:"price", t:"💸 Жирный ценник",   d:"Наценка «а хуле». Каждая пачка дороже на 20%.", base:420, max:6},
+  {id:"pat",   t:"📺 Телик в очереди", d:"Клиенты залипают в рекламу и терпят на 20% дольше.", base:380, max:5},
+  {id:"tip",   t:"🫙 Банка для чаевых", d:"Надпись «на корм кабану». Чаевые +50%.", base:340, max:5},
+  {id:"flow",  t:"📢 Баннер у трассы", d:"Народ прёт гуще. Больше клиентов — больше бабок.", base:500, max:5},
+  {id:"nerv",  t:"🍺 Пивас под кассой", d:"Восстанавливает одно сердечко нервов. Сразу.", base:300, max:99},
+  {id:"time",  t:"⏰ Продлёнка",        d:"Смена длиннее на 8 секунд. Директор не против.", base:450, max:5},
+];
+
+/* ---------------- ХРАНИЛИЩЕ ---------------- */
+const LS_BEST="kaban_best_v1", LS_MUTE="kaban_mute_v1";
+function loadBest(){
+  try{ return JSON.parse(localStorage.getItem(LS_BEST)) || {days:0,served:0,money:0}; }
+  catch(e){ return {days:0,served:0,money:0}; }
+}
+function saveBest(b){ try{ localStorage.setItem(LS_BEST, JSON.stringify(b)); }catch(e){} }
+let BEST = loadBest();
+
+function renderBest(){
+  const b=$("bestBox");
+  if(BEST.days>0){
+    b.classList.add("on");
+    b.innerHTML = `🏆 РЕКОРД: ${BEST.days} смен · обслужено ${BEST.served} рыл · ${BEST.money} ₽ в кассе`;
+  }else{
+    b.classList.remove("on");
+  }
+}
+
+/* ---------------- СОСТОЯНИЕ ---------------- */
+let S=null;
+function newGame(){
+  S={
+    money:0, day:1, nerv:5, maxNerv:5,
+    up:{price:0,pat:0,tip:0,flow:0,nerv:0,time:0},
+    served:0, lost:0, totalServed:0, perfectChange:0,
+    dayRevenue:0, dayTips:0, dayLoss:0,
+    customers:[], tray:[], sel:null,
+    time:0, running:false, spawnT:0, nextId:1,
+    rush:false, rushT:0, rushDone:false,
+  };
+}
+
+const rentFor   = d => Math.round(350 + (d-1)*280 + Math.pow(d,1.7)*45);
+const shiftLen  = () => 60 + S.up.time*8;
+const basePrice = () => Math.round(90*Math.pow(1.2,S.up.price)/10)*10;
+const packPrice = () => S.rush ? basePrice()*2 : basePrice();
+const patienceFor = () => (16 - Math.min(7,S.day*0.8)) * (1 + S.up.pat*0.2);
+const spawnEvery = () => {
+  const base = Math.max(1.5, 5.2 - S.day*0.28 - S.up.flow*0.45);
+  return S.rush ? base*0.32 : base;
+};
+const maxLine   = () => S.rush ? 4 : 3;
+const changeOn  = () => S.day >= 2;
+const orderSize = () => 1 + Math.floor(Math.random()*Math.min(3, 1+Math.floor(S.day/2)));
+
+const $   = id => document.getElementById(id);
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+const sum = a => a.reduce((x,y)=>x+y,0);
+
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on", s.id===id)); }
+
+/* ---------------- ЗВУК ---------------- */
+let AC=null, muted=false;
+try{ muted = localStorage.getItem(LS_MUTE)==="1"; }catch(e){}
+
+function ac(){
+  if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(AC && AC.state==="suspended") AC.resume();
+  return AC;
+}
+function tone(f,d,type,vol,dest){
+  const c=ac(); if(!c||muted) return;
+  try{
+    const o=c.createOscillator(), g=c.createGain();
+    o.type=type||"square"; o.frequency.value=f;
+    g.gain.setValueAtTime(vol||.05, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001, c.currentTime+(d||.1));
+    o.connect(g); g.connect(dest||c.destination);
+    o.start(); o.stop(c.currentTime+(d||.1));
+  }catch(e){}
+}
+const beep = (f,d,t,v)=>tone(f,d,t,v);
+
+/* --- фоновая музыка: 16-шаговый луп, ля-минор, слегка криминальный --- */
+const BASS = [110,0,110,0,146.8,0,110,0, 98,0,98,0,130.8,0,123.5,0];
+const LEAD = [440,0,523.3,587.3,0,523.3,440,0, 392,0,440,523.3,0,392,329.6,0];
+let musTimer=null, musStep=0;
+function musicStart(){
+  if(musTimer||muted) return;
+  ac();
+  musStep=0;
+  const tick=()=>{
+    if(muted){ musicStop(); return; }
+    const c=ac(); if(!c) return;
+    const i = musStep % 16;
+    const b = BASS[i];
+    if(b) tone(b, .22, "triangle", .055);
+    const l = LEAD[i];
+    if(l) tone(l, .13, "square", .022);
+    if(S && S.rush && i%2===0) tone(2400+Math.random()*400, .03, "square", .015);
+    if(S && S.rush && i===0) tone(880, .08, "sawtooth", .03);
+    musStep++;
+    musTimer = setTimeout(tick, (S&&S.rush)?115:150);
+  };
+  tick();
+}
+function musicStop(){ if(musTimer){ clearTimeout(musTimer); musTimer=null; } }
+function setMute(m){
+  muted=m;
+  try{ localStorage.setItem(LS_MUTE, m?"1":"0"); }catch(e){}
+  $("muteBtn").textContent = m?"🔇":"🔊";
+  $("muteBtn2").textContent = m?"🔇":"🔊";
+  if(m) musicStop(); else if(S&&S.running) musicStart();
+}
+
+/* ---------------- ПОЛКА / КАССА ---------------- */
+function activeCust(){ return S.customers.find(c=>c.id===S.sel && !c.gone) || null; }
+function inPay(){ const c=activeCust(); return !!(c && c.stage==="pay"); }
+
+function buildShelf(){
+  const sh=$("shelf"), tr=$("tray"), acts=$("acts");
+  const pay = inPay();
+  sh.className = "shelf" + (pay?" cash":"");
+  sh.innerHTML="";
+  if(pay){
+    DENOMS.forEach((d,i)=>{
+      const el=document.createElement("div");
+      el.className="pack "+d.cls;
+      el.innerHTML=`<span class="key">${i+1}</span><span class="em">${d.em}</span><span class="nm">${d.v} ₽</span>`;
+      el.onclick=()=>addChange(i);
+      sh.appendChild(el);
+    });
+    $("clearBtn").textContent="ЗАБРАТЬ ОБРАТНО ↩️";
+    $("serveBtn").textContent="ОТДАТЬ СДАЧУ 💸";
+    $("serveBtn").className="btn wide green";
+  }else{
+    FLAVORS.forEach((f,i)=>{
+      const el=document.createElement("div");
+      el.className="pack";
+      el.innerHTML=`<span class="key">${i+1}</span><span class="em">${f.em}</span><span class="nm">${f.nm}</span>`;
+      el.onclick=()=>addToTray(i);
+      sh.appendChild(el);
+    });
+    $("clearBtn").textContent="СМЕСТИ НАХУЙ 🧹";
+    $("serveBtn").textContent="ВЫДАТЬ 🤝";
+    $("serveBtn").className="btn wide";
+  }
+}
+
+/* ---------------- СМЕНА ---------------- */
+function startShift(){
+  S.customers=[]; S.tray=[]; S.sel=null;
+  S.time=shiftLen(); S.spawnT=0.6;
+  S.served=0; S.lost=0; S.dayRevenue=0; S.dayTips=0; S.dayLoss=0;
+  S.rush=false; S.rushT=0; S.rushDone=false;
+  S.running=true;
+  document.body.classList.remove("rushing");
+  $("rush").classList.remove("on");
+  show("game");
+  buildShelf();
+  renderAll();
+  musicStart();
+  last=performance.now();
+  requestAnimationFrame(loop);
+}
+
+let last=0;
+function loop(now){
+  if(!S||!S.running) return;
+  const dt=Math.min(0.05,(now-last)/1000);
+  last=now;
+
+  S.time-=dt;
+  S.spawnT-=dt;
+
+  /* наплыв — один раз за смену, чуть за середину */
+  if(!S.rushDone && !S.rush && S.time <= shiftLen()*0.55){
+    startRush();
+  }
+  if(S.rush){
+    S.rushT-=dt;
+    $("rushT").textContent=Math.max(0,Math.ceil(S.rushT));
+    if(S.rushT<=0) stopRush();
+  }
+
+  if(S.spawnT<=0 && S.customers.length<maxLine()){
+    spawn();
+    S.spawnT=spawnEvery();
+  }
+
+  for(let i=S.customers.length-1;i>=0;i--){
+    const c=S.customers[i];
+    if(c.gone) continue;
+    c.pat -= dt * (c.stage==="pay" ? 0.7 : 1);
+    if(c.pat<=0){ c.gone=true; loseCustomer(c); }
+  }
+
+  if(S.time<=0){ endShift(); return; }
+
+  renderHud();
+  renderPatience();
+  requestAnimationFrame(loop);
+}
+
+function startRush(){
+  S.rush=true; S.rushDone=true; S.rushT=10;
+  document.body.classList.add("rushing");
+  $("rush").classList.add("on");
+  toast("🔥 АВТОБУС ПРИЕХАЛ! ВСЕ ХОТЯТ ЧИПСОВ!");
+  beep(300,.15,"sawtooth",.07);
+  setTimeout(()=>beep(500,.2,"sawtooth",.07),150);
+}
+function stopRush(){
+  S.rush=false;
+  document.body.classList.remove("rushing");
+  $("rush").classList.remove("on");
+  toast("Толпа схлынула. Кабан вытирает пот пятаком.");
+}
+
+function spawn(){
+  const n=orderSize(), order=[];
+  for(let i=0;i<n;i++){
+    const f=Math.floor(Math.random()*FLAVORS.length);
+    const q=1+(Math.random()<0.3?1:0);
+    const ex=order.find(o=>o.f===f);
+    if(ex) ex.q+=q; else order.push({f,q});
+  }
+  const p=patienceFor();
+  S.customers.push({
+    id:S.nextId++, face:rnd(FACES), say:rnd(LINES),
+    order, pat:p, maxPat:p, gone:false,
+    stage:"order", bill:0, total:0, change:0, given:[]
+  });
+  if(S.sel===null){ S.sel=S.customers[0].id; buildShelf(); }
+  renderQueue();
+}
+
+/* ---------------- ТОВАР ---------------- */
+function addToTray(fi){
+  if(!S||!S.running||inPay()) return;
+  if(S.tray.length>=9) return;
+  S.tray.push(fi);
+  beep(420+fi*40,.05,"square",.04);
+  renderTray(); renderQueue();
+}
+function removeFromTray(i){ S.tray.splice(i,1); beep(220,.05,"sine",.04); renderTray(); renderQueue(); }
+function clearTray(){
+  if(inPay()){
+    const c=activeCust();
+    if(c && c.given.length){ c.given=[]; beep(160,.12,"sawtooth",.05); renderTray(); }
+    return;
+  }
+  if(!S.tray.length) return;
+  S.tray=[]; beep(160,.12,"sawtooth",.05);
+  renderTray(); renderQueue();
+}
+function selectCust(id){ S.sel=id; buildShelf(); renderQueue(); renderTray(); }
+
+function trayCounts(){ const m={}; S.tray.forEach(f=>m[f]=(m[f]||0)+1); return m; }
+function matches(c){
+  const t=trayCounts();
+  let need=0;
+  for(const o of c.order){ if((t[o.f]||0)!==o.q) return false; need+=o.q; }
+  return S.tray.length===need;
+}
+
+/* ---------------- СДАЧА ---------------- */
+function addChange(di){
+  const c=activeCust();
+  if(!c||c.stage!=="pay") return;
+  if(c.given.length>=12) return;
+  c.given.push(DENOMS[di].v);
+  beep(700+di*90,.05,"triangle",.045);
+  renderTray();
+}
+function removeChange(i){
+  const c=activeCust();
+  if(!c||c.stage!=="pay") return;
+  c.given.splice(i,1);
+  beep(240,.05,"sine",.04);
+  renderTray();
+}
+
+function toPayStage(c){
+  const packs=c.order.reduce((a,o)=>a+o.q,0);
+  const total=packs*packPrice();
+  c.total=total;
+  const opts=BILLS.filter(b=>b>total);
+  if(!changeOn() || !opts.length || Math.random()<0.22){
+    c.bill=total; c.change=0;
+    finishCustomer(c, 1.0);
+    return;
+  }
+  c.bill = opts[Math.floor(Math.random()*Math.min(2,opts.length))];
+  c.change = c.bill - total;
+  c.stage="pay";
+  c.say=rnd(PAYLINES);
+  S.money += c.bill;
+  popText(`+${c.bill} ₽`, "#6ee36e");
+  beep(660,.08,"square",.05);
+  S.tray=[];
+  buildShelf(); renderAll();
+}
+
+function giveChange(){
+  const c=activeCust();
+  if(!c||c.stage!=="pay") return;
+  const given=sum(c.given);
+  if(given===0){ toast("Пустой рукой сдачу отдаёшь? Совсем оборзел."); return; }
+  S.money -= given;
+
+  if(given===c.change){
+    S.perfectChange++;
+    finishCustomer(c, 1.6);
+  }else if(given>c.change){
+    const over=given-c.change;
+    S.dayLoss += over;
+    popText(`−${over} ₽ мимо кассы`, "#ff4d4d");
+    toast("Клиент молча съебался с лишними деньгами. Красавчик.");
+    beep(200,.2,"sawtooth",.05);
+    finishCustomer(c, 0, true);
+  }else{
+    const under=c.change-given;
+    S.money -= under;
+    S.dayRevenue += c.total;
+    S.nerv--;
+    popText("НЕДОДАЛ!", "#ff4d4d");
+    toast(rnd(ROBBED));
+    beep(140,.3,"sawtooth",.06);
+    c.gone=true; removeCust(c);
+    buildShelf(); renderAll();
+    if(S.nerv<=0){ gameOver("nerv"); }
+    return;
+  }
+}
+
+function finishCustomer(c, tipMult, silent){
+  const speed=Math.max(0,c.pat/c.maxPat);
+  const tip=Math.round(c.total*speed*0.4*(1+S.up.tip*0.5)*(tipMult||0));
+  if(c.stage!=="pay"){
+    S.money += c.total;
+    popText(`+${c.total+tip} ₽`, "#6ee36e");
+    beep(660,.08,"square",.05);
+    setTimeout(()=>beep(880,.12,"square",.05),80);
+  }else if(tipMult>=1.6){
+    popText("СДАЧА ТОЧНО! 🎯", "#6ee36e");
+    beep(880,.09,"square",.05);
+    setTimeout(()=>beep(1174,.14,"square",.05),90);
+  }
+  if(tip>0) S.money += tip;
+  S.dayRevenue += c.total;
+  S.dayTips += tip;
+  S.served++; S.totalServed++;
+  if(!silent) toast(tip>0 ? `${rnd(HAPPY)} (чаевые ${tip} ₽)` : rnd(HAPPY));
+  c.gone=true;
+  removeCust(c);
+  S.tray=[];
+  buildShelf(); renderAll();
+}
+
+function serve(){
+  if(!S||!S.running) return;
+  if(inPay()){ giveChange(); return; }
+  const c=activeCust();
+  if(!c){ toast("Ты кому выдаёшь-то? Выбери клиента."); return; }
+  if(!S.tray.length){ toast("Прилавок пустой, кабан."); return; }
+
+  if(matches(c)){
+    toPayStage(c);
+  }else{
+    S.nerv--;
+    popText("НЕ ТО!","#ff4d4d");
+    toast(rnd(ANGRY));
+    beep(140,.3,"sawtooth",.06);
+    c.gone=true; removeCust(c);
+    S.tray=[];
+    buildShelf(); renderAll();
+    if(S.nerv<=0){ gameOver("nerv"); }
+  }
+}
+
+function loseCustomer(c){
+  S.nerv--; S.lost++;
+  if(c.stage==="pay"){
+    S.money -= c.bill;
+    popText(`УШЁЛ С ТОВАРОМ! −${c.bill} ₽`,"#ff4d4d");
+    S.dayLoss += c.bill;
+    toast("Устал ждать сдачу и ушёл вместе с чипсами и деньгами.");
+  }else{
+    popText("УШЁЛ 😤","#ff4d4d");
+    toast(rnd(LEFT));
+  }
+  beep(120,.25,"sawtooth",.05);
+  removeCust(c);
+  buildShelf(); renderHud();
+  if(S.nerv<=0){ gameOver("nerv"); }
+}
+
+function removeCust(c){
+  const el=document.querySelector(`.cust[data-id="${c.id}"]`);
+  if(el) el.classList.add("leaving");
+  S.customers=S.customers.filter(x=>x.id!==c.id);
+  if(S.sel===c.id) S.sel = S.customers.length ? S.customers[0].id : null;
+  setTimeout(()=>{ if(S&&S.running){ buildShelf(); renderQueue(); renderTray(); } },60);
+}
+
+/* ---------------- РЕНДЕР ---------------- */
+function renderAll(){ renderHud(); renderQueue(); renderTray(); }
+
+function renderHud(){
+  $("sMoney").textContent=S.money;
+  $("sDay").textContent=S.day;
+  $("sRent").textContent=rentFor(S.day);
+  $("sNerv").textContent="❤".repeat(Math.max(0,S.nerv))+"🖤".repeat(Math.max(0,S.maxNerv-S.nerv));
+  $("nervStat").classList.toggle("bad",S.nerv<=2);
+  $("sTime").textContent=Math.max(0,Math.ceil(S.time));
+  $("tbar").style.width=Math.max(0,(S.time/shiftLen())*100)+"%";
+}
+
+function renderPatience(){
+  S.customers.forEach(c=>{
+    const b=document.querySelector(`.cust[data-id="${c.id}"] .pat > i`);
+    if(!b) return;
+    const r=Math.max(0,c.pat/c.maxPat);
+    b.style.width=(r*100)+"%";
+    b.style.background = r>0.5?"#6ee36e" : r>0.25?"#ffb43c" : "#ff4d4d";
+  });
+}
+
+function renderQueue(){
+  const q=$("queue");
+  if(!S.customers.length){
+    q.innerHTML='<div class="empty">Пусто. Кабан протирает прилавок хвостом…</div>';
+    return;
+  }
+  const t=trayCounts();
+  q.innerHTML="";
+  S.customers.forEach((c,i)=>{
+    const d=document.createElement("div");
+    d.className="cust"+(c.id===S.sel?" sel":"")+(c.stage==="pay"?" pay":"");
+    d.dataset.id=c.id;
+    let body;
+    if(c.stage==="pay"){
+      body=`<div class="money-note">Товар отдан. Дал <b>${c.bill} ₽</b><br>Ценник: <b>${c.total} ₽</b></div>`;
+    }else{
+      body='<div class="order">'+c.order.map(o=>{
+        const have=(c.id===S.sel)&&(t[o.f]||0)===o.q;
+        return `<span class="oitem ${have?"done":""}">${FLAVORS[o.f].em}×${o.q}</span>`;
+      }).join("")+'</div>';
+    }
+    d.innerHTML=
+      `<span class="hint">${["Q","W","E","R"][i]||""}</span>`+
+      (c.stage==="pay"?'<span class="badge">💰</span>':'')+
+      `<span class="face">${c.face}</span>`+
+      body+
+      `<div class="say">«${c.say}»</div>`+
+      `<div class="pat"><i></i></div>`;
+    d.onclick=()=>selectCust(c.id);
+    q.appendChild(d);
+  });
+  renderPatience();
+}
+
+function renderTray(){
+  const tr=$("tray");
+  const c=activeCust();
+  const pay=!!(c&&c.stage==="pay");
+  tr.className="tray"+(pay?" cash":"");
+  tr.innerHTML="";
+  const lbl=document.createElement("span");
+  lbl.className="lbl";
+  lbl.textContent = pay ? "Сдача:" : "Прилавок:";
+  tr.appendChild(lbl);
+
+  if(pay){
+    if(!c.given.length){
+      const s=document.createElement("span");
+      s.className="lbl"; s.style.color="#6b4726"; s.textContent="— отсчитай купюрами —";
+      tr.appendChild(s);
+    }
+    c.given.forEach((v,i)=>{
+      const e=document.createElement("span");
+      e.className="chip c"; e.textContent=v+" ₽";
+      e.onclick=()=>removeChange(i);
+      tr.appendChild(e);
+    });
+    const s=document.createElement("span");
+    s.className="sum"; s.textContent="= "+sum(c.given)+" ₽";
+    tr.appendChild(s);
+  }else{
+    if(!S.tray.length){
+      const s=document.createElement("span");
+      s.className="lbl"; s.style.color="#6b4726"; s.textContent="— пусто —";
+      tr.appendChild(s);
+    }
+    S.tray.forEach((f,i)=>{
+      const e=document.createElement("span");
+      e.className="chip"; e.textContent=FLAVORS[f].em; e.title="Убрать";
+      e.onclick=()=>removeFromTray(i);
+      tr.appendChild(e);
+    });
+  }
+}
+
+function popText(txt,color){
+  const p=document.createElement("div");
+  p.className="pop"; p.textContent=txt; p.style.color=color;
+  p.style.left=(22+Math.random()*48)+"%"; p.style.top="42%";
+  $("pops").appendChild(p);
+  setTimeout(()=>p.remove(),1150);
+}
+let toastEl=null;
+function toast(msg){
+  if(toastEl) toastEl.remove();
+  const t=document.createElement("div");
+  t.className="toast"; t.textContent=msg;
+  $("game").appendChild(t); toastEl=t;
+  setTimeout(()=>{ if(t.parentNode) t.remove(); },2200);
+}
+
+/* ---------------- ИТОГИ СМЕНЫ ---------------- */
+function endShift(){
+  S.running=false;
+  musicStop();
+  document.body.classList.remove("rushing");
+  $("rush").classList.remove("on");
+
+  const rent=rentFor(S.day);
+  if(S.money<rent){ gameOver("rent"); return; }
+  S.money-=rent;
+
+  $("seTitle").textContent=`СМЕНА ${S.day} ЗАКРЫТА`;
+  $("seLead").textContent = S.lost===0
+    ? "Ни один клиент не ушёл. Кабан собой доволен, аж хрюкает."
+    : `Ушло недовольных: ${S.lost}. Кабан делает вид, что не заметил.`;
+
+  $("seRows").innerHTML=
+    `<div><span>Обслужено рыл</span><b>${S.served}</b></div>`+
+    `<div><span>Выручка с чипсов</span><b>${S.dayRevenue} ₽</b></div>`+
+    `<div><span>Чаевые</span><b>${S.dayTips} ₽</b></div>`+
+    (S.dayLoss?`<div class="neg"><span>Просрано на сдаче</span><b>−${S.dayLoss} ₽</b></div>`:"")+
+    `<div class="neg"><span>Аренда ларька</span><b>−${rent} ₽</b></div>`+
+    `<div class="tot"><span>В кассе осталось</span><b>${S.money} ₽</b></div>`;
+
+  renderUpgrades();
+  show("shiftend");
+}
+
+const upCost = u => Math.round(u.base*Math.pow(1.75,S.up[u.id]));
+function renderUpgrades(){
+  $("seCash").textContent=S.money;
+  const box=$("ups"); box.innerHTML="";
+  UPGRADES.forEach(u=>{
+    const lv=S.up[u.id];
+    const maxed = lv>=u.max || (u.id==="nerv" && S.nerv>=S.maxNerv);
+    const cost=upCost(u);
+    const can = !maxed && S.money>=cost;
+    const d=document.createElement("div");
+    d.className="up"+(can?"":" no");
+    d.innerHTML=
+      `<span class="lv">${u.id==="nerv" ? (S.nerv>=S.maxNerv?"нервы целы":"") : "ур. "+lv+"/"+u.max}</span>`+
+      `<div class="t">${u.t}</div><div class="d">${u.d}</div>`+
+      `<div class="p">${maxed?"НЕ НАДО":cost+" ₽"}</div>`;
+    if(can) d.onclick=()=>buy(u);
+    box.appendChild(d);
+  });
+}
+function buy(u){
+  const cost=upCost(u);
+  if(S.money<cost) return;
+  if(u.id==="nerv"){
+    if(S.nerv>=S.maxNerv) return;
+    S.nerv++;
+  }
+  S.money-=cost; S.up[u.id]++;
+  beep(760,.1,"square",.05);
+  const tot=$("seRows").querySelector(".tot b");
+  if(tot) tot.textContent=S.money+" ₽";
+  renderUpgrades();
+}
+
+/* ---------------- КОНЕЦ ИГРЫ ---------------- */
+function gameOver(reason){
+  S.running=false;
+  musicStop();
+  document.body.classList.remove("rushing");
+  $("rush").classList.remove("on");
+
+  const rent=rentFor(S.day);
+  const days=S.day-1;
+  if(reason==="nerv"){
+    $("ovEmoji").textContent="🐗💤";
+    $("ovTitle").textContent="КАБАН УШЁЛ В ЗАПОЙ";
+    $("ovLead").textContent="Нервы кончились. Ларёк закрыт на «технический перерыв» бессрочно.";
+  }else{
+    $("ovEmoji").textContent="🏚️";
+    $("ovTitle").textContent="ООО ЛИКВИДИРОВАНО";
+    $("ovLead").textContent=`Аренда ${rent} ₽, а в кассе ${S.money} ₽. Арендодатель вынес дверь вместе с косяком.`;
+  }
+
+  const rec = days>BEST.days || (days===BEST.days && S.totalServed>BEST.served);
+  $("ovRec").style.display = rec ? "block" : "none";
+  if(rec){
+    BEST={days, served:S.totalServed, money:S.money};
+    saveBest(BEST);
+    beep(880,.1,"square",.06);
+    setTimeout(()=>beep(1174,.1,"square",.06),110);
+    setTimeout(()=>beep(1568,.25,"square",.06),220);
+  }else{
+    beep(200,.5,"sawtooth",.07);
+  }
+
+  $("ovRows").innerHTML=
+    `<div><span>Продержался смен</span><b>${days}</b></div>`+
+    `<div><span>Всего обслужено</span><b>${S.totalServed}</b></div>`+
+    `<div><span>Сдача до копейки</span><b>${S.perfectChange} раз</b></div>`+
+    `<div><span>Осталось в кассе</span><b>${S.money} ₽</b></div>`+
+    `<div class="tot"><span>🏆 Рекорд</span><b>${BEST.days} смен</b></div>`;
+
+  renderBest();
+  show("over");
+}
+
+/* ---------------- УПРАВЛЕНИЕ ---------------- */
+document.addEventListener("keydown", e=>{
+  const k=e.key.toLowerCase();
+  if(k==="m"||k==="ь"){ setMute(!muted); e.preventDefault(); return; }
+
+  if($("welcome").classList.contains("on")){
+    if(k==="enter"||k===" "){ e.preventDefault(); begin(); }
+    return;
+  }
+  if($("shiftend").classList.contains("on")){
+    if(k==="enter"){ e.preventDefault(); S.day++; startShift(); }
+    return;
+  }
+  if($("over").classList.contains("on")){
+    if(k==="enter"){ e.preventDefault(); begin(); }
+    return;
+  }
+  if(!S||!S.running) return;
+
+  if(k>="1"&&k<="6"){
+    const i=+k-1;
+    if(inPay()){ if(i<DENOMS.length) addChange(i); }
+    else addToTray(i);
+    e.preventDefault(); return;
+  }
+  if(k==="enter"){ serve(); e.preventDefault(); return; }
+  if(k==="backspace"){
+    if(inPay()){ const c=activeCust(); if(c.given.length) removeChange(c.given.length-1); }
+    else if(S.tray.length) removeFromTray(S.tray.length-1);
+    e.preventDefault(); return;
+  }
+  if(k==="delete"){ clearTray(); e.preventDefault(); return; }
+  const qi={"q":0,"w":1,"e":2,"r":3,"й":0,"ц":1,"у":2,"к":3}[k];
+  if(qi!==undefined && S.customers[qi]){ selectCust(S.customers[qi].id); e.preventDefault(); }
+});
+
+function begin(){
+  newGame();
+  ac();
+  startShift();
+}
+
+$("startBtn").onclick=begin;
+$("againBtn").onclick=begin;
+$("nextBtn").onclick=()=>{ S.day++; startShift(); };
+$("serveBtn").onclick=serve;
+$("clearBtn").onclick=clearTray;
+$("muteBtn").onclick=()=>setMute(!muted);
+$("muteBtn2").onclick=()=>setMute(!muted);
+
+setMute(muted);
+renderBest();
+
+})();
+</script>
+</body>
+</html>
