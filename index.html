@@ -204,7 +204,7 @@
       <b>ТЫ</b> — кабан за прилавком. Твоя задача — не опозориться.<br>
       🔸 Кликай пачки на полке, собери <b>ровно заказ</b> → жми <b>ВЫДАТЬ</b>.<br>
       🔸 Клиент суёт купюру — со 2-й смены надо <b>отсчитать сдачу</b> купюрами. Точно — жирные чаевые.<br>
-      🔸 Ошибся, недодал сдачи или клиент устал ждать — минус <b>нервы</b>. Кончились — кабан в запое.<br>
+      🔸 Ошибся, недодал сдачи или клиент устал ждать — минус <b>нервы</b>. Кончились — кабан ушёл на перерыв.<br>
       🔸 Раз за смену случается <b>🔥 НАПЛЫВ</b>: 10 секунд толпы и двойной ценник. Держись.<br>
       🔸 В конце смены платим <b>аренду</b>. Не заплатил — ООО прикрыли.<br>
       🔸 Клавиши: <b>1—6</b> товар / купюры, <b>Q W E R</b> клиент, <b>Enter</b> выдать, <b>Backspace</b> убрать, <b>M</b> музыка.
@@ -248,6 +248,7 @@
     <div class="rows" id="seRows"></div>
     <div style="font-size:14px;color:var(--dim);margin-bottom:8px">ЗАКУПКА И МОДЕРНИЗАЦИЯ (в кассе: <b style="color:var(--gold)" id="seCash">0</b> ₽)</div>
     <div class="ups" id="ups"></div>
+    <button class="btn" id="adBtn" style="display:none;background:linear-gradient(#8ee87e,#3f9b2c);color:#0d2a06;box-shadow:0 6px 0 #24630f">🎬 Реклама: +300 ₽</button>
     <button class="btn" id="nextBtn">СЛЕДУЮЩАЯ СМЕНА ➡️</button>
   </div>
 </div>
@@ -288,7 +289,7 @@ const BILLS = [100,200,500,1000,2000,5000];
 
 const FACES = ["🧔","👵","👮","🧛","🐻","🦊","🐺","👨‍🚀","🤠","👷","🧙","🤡","👽","🧟","🐕","🦝"];
 const LINES = [
-  "Э, кабан, живее!","Мне на сдачу плевать.","Пивас есть? Ладно, чипсы.",
+  "Э, кабан, живее!","Мне на сдачу плевать.","Квас есть? Ладно, чипсы.",
   "Я на такси приехал вообще-то.","Быстрее, у меня матч.","Мамка сказала эти брать.",
   "Только не просроченные.","Хрустеть буду в кинотеатре.","Я тут с 8 утра стою.",
   "Оплата картой? Нет? Кошмар.","Дай пакетик, дай пакетик.","Слышь, а ты реально кабан?",
@@ -306,7 +307,7 @@ const UPGRADES = [
   {id:"pat",   t:"📺 Телик в очереди", d:"Клиенты залипают в рекламу и терпят на 20% дольше.", base:380, max:5},
   {id:"tip",   t:"🫙 Банка для чаевых", d:"Надпись «на корм кабану». Чаевые +50%.", base:340, max:5},
   {id:"flow",  t:"📢 Баннер у трассы", d:"Народ прёт гуще. Больше клиентов — больше бабок.", base:500, max:5},
-  {id:"nerv",  t:"🍺 Пивас под кассой", d:"Восстанавливает одно сердечко нервов. Сразу.", base:300, max:99},
+  {id:"nerv",  t:"☕ Кофе под кассой", d:"Восстанавливает одно сердечко нервов. Сразу.", base:300, max:99},
   {id:"time",  t:"⏰ Продлёнка",        d:"Смена длиннее на 8 секунд. Директор не против.", base:450, max:5},
 ];
 
@@ -847,11 +848,13 @@ function endShift(){
     `<div><span>Обслужено рыл</span><b>${S.served}</b></div>`+
     `<div><span>Выручка с чипсов</span><b>${S.dayRevenue} ₽</b></div>`+
     `<div><span>Чаевые</span><b>${S.dayTips} ₽</b></div>`+
-    (S.dayLoss?`<div class="neg"><span>Просрано на сдаче</span><b>−${S.dayLoss} ₽</b></div>`:"")+
+    (S.dayLoss?`<div class="neg"><span>Потеряно на сдаче</span><b>−${S.dayLoss} ₽</b></div>`:"")+
     `<div class="neg"><span>Аренда ларька</span><b>−${rent} ₽</b></div>`+
     `<div class="tot"><span>В кассе осталось</span><b>${S.money} ₽</b></div>`;
 
   renderUpgrades();
+  var ab=$("adBtn");
+  if(ab){ ab.style.display = hasAdv() ? "" : "none"; ab.textContent="🎬 Реклама: +300 ₽"; }
   show("shiftend");
 }
 
@@ -900,7 +903,7 @@ function gameOver(reason){
   const days=S.day-1;
   if(reason==="nerv"){
     $("ovEmoji").textContent="🐗💤";
-    $("ovTitle").textContent="КАБАН УШЁЛ В ЗАПОЙ";
+    $("ovTitle").textContent="КАБАН УШЁЛ НА ПЕРЕРЫВ";
     $("ovLead").textContent="Нервы кончились. Ларёк закрыт на «технический перерыв» бессрочно.";
   }else{
     $("ovEmoji").textContent="🏚️";
@@ -941,7 +944,7 @@ document.addEventListener("keydown", e=>{
     return;
   }
   if($("shiftend").classList.contains("on")){
-    if(k==="enter"){ e.preventDefault(); S.day++; startShift(); }
+    if(k==="enter"){ e.preventDefault(); showInterstitial(function(){ S.day++; startShift(); }); }
     return;
   }
   if($("over").classList.contains("on")){
@@ -975,7 +978,16 @@ function begin(){
 
 $("startBtn").onclick=begin;
 $("againBtn").onclick=begin;
-$("nextBtn").onclick=()=>{ S.day++; startShift(); };
+$("nextBtn").onclick=()=>{ showInterstitial(function(){ S.day++; startShift(); }); };
+$("adBtn").onclick=()=>{
+  $("adBtn").style.display="none";              // одноразовая награда за смену
+  showRewarded(function(){
+    S.money += 300;
+    $("seCash").textContent = S.money;
+    const tot=$("seRows").querySelector(".tot b"); if(tot) tot.textContent = S.money+" ₽";
+    renderUpgrades();
+  });
+};
 $("serveBtn").onclick=serve;
 $("clearBtn").onclick=clearTray;
 $("muteBtn").onclick=()=>setMute(!muted);
@@ -1053,6 +1065,41 @@ function gameplayStop(){
 }
 window.__gameplayStart = gameplayStart;
 window.__gameplayStop = gameplayStop;
+
+/* ---------------- РЕКЛАМА (§4.4 логические паузы, §4.5 согласие, §4.7 пауза звука) ---------------- */
+function hasAdv(){ return !!(ysdk && ysdk.adv); }
+
+/* Межстраничная реклама — показывается только в логической паузе (между сменами). */
+function showInterstitial(after){
+  if(!hasAdv()){ if(after) after(); return; }
+  var went=false;
+  var go=function(){ if(went) return; went=true; audioResume(); if(after) after(); };
+  audioPause();
+  try{
+    ysdk.adv.showFullscreenAdv({ callbacks:{
+      onClose: function(){ go(); },
+      onError: function(){ go(); }
+    }});
+    // страховка, если платформа не вызовет колбэки
+    setTimeout(go, 8000);
+  }catch(e){ go(); }
+}
+
+/* Rewarded — только по явному клику игрока; награда выдаётся, лишь если ролик досмотрен. */
+function showRewarded(onReward){
+  if(!hasAdv()) return;
+  var rewarded=false;
+  audioPause();
+  try{
+    ysdk.adv.showRewardedVideo({ callbacks:{
+      onRewarded: function(){ rewarded=true; },
+      onClose: function(){ audioResume(); if(rewarded && onReward) onReward(); },
+      onError: function(){ audioResume(); }
+    }});
+  }catch(e){ audioResume(); }
+}
+window.__showInterstitial = showInterstitial;
+window.__showRewarded = showRewarded;
 
 })();
 </script>
