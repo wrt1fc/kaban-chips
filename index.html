@@ -316,7 +316,11 @@ function loadBest(){
   try{ return JSON.parse(localStorage.getItem(LS_BEST)) || {days:0,served:0,money:0}; }
   catch(e){ return {days:0,served:0,money:0}; }
 }
-function saveBest(b){ try{ localStorage.setItem(LS_BEST, JSON.stringify(b)); }catch(e){} }
+function saveBest(b){
+  try{ localStorage.setItem(LS_BEST, JSON.stringify(b)); }catch(e){}
+  // §1.9 — облачное сохранение прогресса, если доступен игрок Яндекса
+  try{ if(window.__player) window.__player.setData({ kaban_best:b }); }catch(e){}
+}
 let BEST = loadBest();
 
 function renderBest(){
@@ -980,6 +984,18 @@ $("muteBtn2").onclick=()=>setMute(!muted);
 setMute(muted);
 renderBest();
 
+/* §1.3 — пауза звука и музыки при потере фокуса вкладки (сворачивание, смена вкладки) */
+function audioPause(){ musicStop(); try{ if(AC) AC.suspend(); }catch(e){} }
+function audioResume(){ try{ if(AC) AC.resume(); }catch(e){} if(S && S.running && !muted) musicStart(); }
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden) audioPause(); else audioResume();
+});
+window.addEventListener("blur", audioPause);
+window.addEventListener("focus", audioResume);
+
+/* §1.6 — отключаем контекстное меню браузера в игровой области (правый клик / долгий тап) */
+document.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+
 /* ---------------- YANDEX GAMES SDK ---------------- */
 /* Требование 2.14: автоопределение языка через SDK при запуске —
    выполняется у всех игр, даже одноязычных. Игра работает и без SDK
@@ -998,6 +1014,27 @@ function initYandex(){
     }catch(e){}
     // сообщаем платформе, что игра загрузилась (убирает лоадер Яндекса)
     try{ if(sdk.features && sdk.features.LoadingAPI) sdk.features.LoadingAPI.ready(); }catch(e){}
+    // §1.9 — облачные сохранения: берём рекорд игрока и мержим с локальным
+    try{
+      sdk.getPlayer({ scopes:false }).then(function(player){
+        window.__player = player;
+        player.getData(["kaban_best"]).then(function(data){
+          var cloud = data && data.kaban_best;
+          if(cloud && typeof cloud.days === "number"){
+            // берём лучший из облака и локального
+            if(cloud.days>BEST.days || (cloud.days===BEST.days && (cloud.served||0)>BEST.served)){
+              BEST = { days:cloud.days, served:cloud.served||0, money:cloud.money||0 };
+              try{ localStorage.setItem(LS_BEST, JSON.stringify(BEST)); }catch(e){}
+              renderBest();
+            }else{
+              player.setData({ kaban_best:BEST }); // локальный лучше — заливаем в облако
+            }
+          }else{
+            player.setData({ kaban_best:BEST });   // в облаке пусто — заливаем локальный
+          }
+        }).catch(function(){});
+      }).catch(function(){});
+    }catch(e){}
   }).catch(function(){ /* вне платформы init может не завершиться — это нормально */ });
 }
 initYandex();
