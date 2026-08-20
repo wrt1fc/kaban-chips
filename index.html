@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>ООО «КАБАН БЛИННННН» — чипсы кабана</title>
+<script src="https://yandex.ru/games/sdk/v2"></script>
 <style>
   :root{
     --bg:#150f0a;
@@ -462,6 +463,7 @@ function startShift(){
   buildShelf();
   renderAll();
   musicStart();
+  gameplayStart();
   last=performance.now();
   requestAnimationFrame(loop);
 }
@@ -824,6 +826,7 @@ function toast(msg){
 function endShift(){
   S.running=false;
   musicStop();
+  gameplayStop();
   document.body.classList.remove("rushing");
   $("rush").classList.remove("on");
 
@@ -885,6 +888,7 @@ function buy(u){
 function gameOver(reason){
   S.running=false;
   musicStop();
+  gameplayStop();
   document.body.classList.remove("rushing");
   $("rush").classList.remove("on");
 
@@ -975,6 +979,43 @@ $("muteBtn2").onclick=()=>setMute(!muted);
 
 setMute(muted);
 renderBest();
+
+/* ---------------- YANDEX GAMES SDK ---------------- */
+/* Требование 2.14: автоопределение языка через SDK при запуске —
+   выполняется у всех игр, даже одноязычных. Игра работает и без SDK
+   (например, при открытии напрямую), поэтому всё обёрнуто в try/catch. */
+window.ysdk = null;
+window.gameLang = "ru";
+function initYandex(){
+  if(typeof YaGames === "undefined") return;           // SDK не загрузился — играем как есть
+  if(window.parent === window) return;                 // не во фрейме (открыто напрямую) — SDK не нужен
+  YaGames.init().then(function(sdk){
+    window.ysdk = sdk;
+    try{
+      // автоопределение языка при запуске
+      var lang = sdk.environment && sdk.environment.i18n && sdk.environment.i18n.lang;
+      if(lang) window.gameLang = lang;                  // игра одноязычная (ru), но язык считываем
+    }catch(e){}
+    // сообщаем платформе, что игра загрузилась (убирает лоадер Яндекса)
+    try{ if(sdk.features && sdk.features.LoadingAPI) sdk.features.LoadingAPI.ready(); }catch(e){}
+  }).catch(function(){ /* вне платформы init может не завершиться — это нормально */ });
+}
+initYandex();
+
+/* метки геймплея для платформы (пауза музыки/рекламы во время игры) */
+window.__gpActive = false;
+function gameplayStart(){
+  if(window.__gpActive) return;
+  window.__gpActive = true;
+  try{ if(ysdk && ysdk.features && ysdk.features.GameplayAPI) ysdk.features.GameplayAPI.start(); }catch(e){}
+}
+function gameplayStop(){
+  if(!window.__gpActive) return;
+  window.__gpActive = false;
+  try{ if(ysdk && ysdk.features && ysdk.features.GameplayAPI) ysdk.features.GameplayAPI.stop(); }catch(e){}
+}
+window.__gameplayStart = gameplayStart;
+window.__gameplayStop = gameplayStop;
 
 })();
 </script>
