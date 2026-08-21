@@ -195,20 +195,12 @@
 <!-- ================= ПРИВЕТСТВИЕ ================= -->
 <div class="screen on" id="welcome">
   <div class="sign">
-    <div class="ooo">Общество с ограниченной ответственностью</div>
-    <div class="signtitle">«КАБАН БЛИННННН»</div>
-    <div class="sub">🥔 ЧИПСЫ КАБАНА — ХРУСТИМ С 1997 ГОДА 🥔</div>
+    <div class="ooo" id="lblOoo">Общество с ограниченной ответственностью</div>
+    <div class="signtitle" id="lblTitle">«КАБАН БЛИННННН»</div>
+    <div class="sub" id="lblSub1">🥔 ЧИПСЫ КАБАНА — ХРУСТИМ С 1997 ГОДА 🥔</div>
     <span class="boar-big">🐗</span>
-    <div class="sub" style="margin:0">Добро пожаловать, дорогой ты наш покупатель.<br>Касса вон там. Не толпимся, товарищи.</div>
-    <div class="rules">
-      <b>ТЫ</b> — кабан за прилавком. Твоя задача — не опозориться.<br>
-      🔸 Кликай пачки на полке, собери <b>ровно заказ</b> → жми <b>ВЫДАТЬ</b>.<br>
-      🔸 Клиент суёт купюру — со 2-й смены надо <b>отсчитать сдачу</b> купюрами. Точно — жирные чаевые.<br>
-      🔸 Ошибся, недодал сдачи или клиент устал ждать — минус <b>нервы</b>. Кончились — кабан ушёл на перерыв.<br>
-      🔸 Раз за смену случается <b>🔥 НАПЛЫВ</b>: 10 секунд толпы и двойной ценник. Держись.<br>
-      🔸 В конце смены платим <b>аренду</b>. Не заплатил — ООО прикрыли.<br>
-      🔸 Клавиши: <b>1—6</b> товар / купюры, <b>Q W E R</b> клиент, <b>Enter</b> выдать, <b>Backspace</b> убрать, <b>M</b> музыка.
-    </div>
+    <div class="sub" id="lblWelcome" style="margin:0">Добро пожаловать, дорогой ты наш покупатель.<br>Касса вон там. Не толпимся, товарищи.</div>
+    <div class="rules" id="rulesBox"></div>
     <div class="best" id="bestBox"></div>
     <button class="btn" id="startBtn">ОТКРЫТЬ МАГАЗИН 🔑</button>
     <button class="btn" id="muteBtn" style="padding:15px 20px">🔊</button>
@@ -219,10 +211,10 @@
 <div class="screen" id="game">
   <div class="hud">
     <div class="stat">💰 <span id="sMoney">0</span> ₽</div>
-    <div class="stat">📅 Смена <span id="sDay">1</span></div>
-    <div class="stat">🏦 Аренда <span id="sRent">0</span> ₽</div>
+    <div class="stat">📅 <span id="lblDay">Смена</span> <span id="sDay">1</span></div>
+    <div class="stat">🏦 <span id="lblRent">Аренда</span> <span id="sRent">0</span> ₽</div>
     <div class="stat" id="nervStat">🧠 <span id="sNerv">❤❤❤❤❤</span></div>
-    <div class="stat">⏱ <span id="sTime">60</span> с</div>
+    <div class="stat">⏱ <span id="sTime">60</span> <span id="lblSec">с</span></div>
     <div class="stat tap" id="muteBtn2">🔊</div>
   </div>
   <div class="timerbar"><i id="tbar"></i></div>
@@ -236,7 +228,7 @@
       <button class="btn wide" id="serveBtn">ВЫДАТЬ 🤝</button>
     </div>
   </div>
-  <div id="rush">🔥 НАПЛЫВ! ЦЕНЫ ×2 — <span id="rushT">10</span></div>
+  <div id="rush"><span id="lblRush">🔥 НАПЛЫВ! ЦЕНЫ ×2 — </span><span id="rushT">10</span></div>
   <div id="pops"></div>
 </div>
 
@@ -246,7 +238,7 @@
     <h2 id="seTitle">СМЕНА ЗАКРЫТА</h2>
     <p class="lead" id="seLead">Кабан считает бабки слюнявым пятаком.</p>
     <div class="rows" id="seRows"></div>
-    <div style="font-size:14px;color:var(--dim);margin-bottom:8px">ЗАКУПКА И МОДЕРНИЗАЦИЯ (в кассе: <b style="color:var(--gold)" id="seCash">0</b> ₽)</div>
+    <div style="font-size:14px;color:var(--dim);margin-bottom:8px" id="lblShop">ЗАКУПКА И МОДЕРНИЗАЦИЯ (в кассе: <b style="color:var(--gold)" id="seCash">0</b> ₽)</div>
     <div class="ups" id="ups"></div>
     <button class="btn" id="adBtn" style="display:none;background:linear-gradient(#8ee87e,#3f9b2c);color:#0d2a06;box-shadow:0 6px 0 #24630f">🎬 Реклама: +300 ₽</button>
     <button class="btn" id="nextBtn">СЛЕДУЮЩАЯ СМЕНА ➡️</button>
@@ -269,15 +261,28 @@
 (function(){
 "use strict";
 
+/* ---------------- ЯЗЫК / LANGUAGE ---------------- */
+let LANG = (function(){
+  try{
+    var q = new URLSearchParams(location.search).get("lang");   // ручной выбор ?lang=en
+    if(q) return q.toLowerCase().indexOf("en")===0 ? "en" : "ru";
+  }catch(e){}
+  var l = (navigator.language || navigator.userLanguage || "ru").toLowerCase();
+  return l.indexOf("en")===0 ? "en" : "ru";
+})();
+function setLang(code){
+  LANG = (code && String(code).toLowerCase().indexOf("en")===0) ? "en" : "ru";
+}
+const LA = o => o[LANG] || o.ru;           // выбрать массив/значение по языку
+
 /* ---------------- ТОВАР ---------------- */
-const FLAVORS = [
-  {em:"🦀", nm:"Крабовые"},
-  {em:"🥓", nm:"Бекон (предательство)"},
-  {em:"🧅", nm:"Лук-сметана"},
-  {em:"🌶️", nm:"Паприка огонь"},
-  {em:"🧀", nm:"Сыр вырви глаз"},
-  {em:"🐟", nm:"Вобла"},
-];
+const FLAV_EM = ["🦀","🥓","🧅","🌶️","🧀","🐟"];
+const FLAV_NM = {
+  ru:["Крабовые","Бекон (предательство)","Лук-сметана","Паприка огонь","Сыр вырви глаз","Вобла"],
+  en:["Crab, Duh","Bacon (Betrayal)","Onion & Cream","Paprika Fire","Cheese Overload","Dried Fish"]
+};
+const FLAVORS = FLAV_EM.map((em,i)=>({em, get nm(){ return LA(FLAV_NM)[i]; }}));
+
 const DENOMS = [
   {v:10,   em:"🪙", cls:"coin"},
   {v:50,   em:"🪙", cls:"coin"},
@@ -288,28 +293,191 @@ const DENOMS = [
 const BILLS = [100,200,500,1000,2000,5000];
 
 const FACES = ["🧔","👵","👮","🧛","🐻","🦊","🐺","👨‍🚀","🤠","👷","🧙","🤡","👽","🧟","🐕","🦝"];
-const LINES = [
-  "Э, кабан, живее!","Мне на сдачу плевать.","Квас есть? Ладно, чипсы.",
-  "Я на такси приехал вообще-то.","Быстрее, у меня матч.","Мамка сказала эти брать.",
-  "Только не просроченные.","Хрустеть буду в кинотеатре.","Я тут с 8 утра стою.",
-  "Оплата картой? Нет? Кошмар.","Дай пакетик, дай пакетик.","Слышь, а ты реально кабан?",
-  "Мне для собаки. Себе тоже.","Смена у меня, некогда.","Это на день рождения, не осуждай."
-];
-const PAYLINES = ["Сдачу давай.","Мелочи нет, извини.","Только не монетами!","Сдачу до копейки, я считаю.","Ну? Считай давай.","Крупная, других нет."];
-const HAPPY = ["Ну наконец-то!","Красава, кабан.","Вот это сервис.","Хрум-хрум, спасибо.","Уважаю."];
-const ANGRY = ["Ты чё мне подсунул?!","Я такое не просил, балбес.","Верни бабки!","Ты вообще читать умеешь?"];
-const LEFT  = ["Да ну тебя.","Всё, я в «Пятёрочку».","Час стою! Час!","Тьфу, кабан."];
-const ROBBED = ["Ты меня обмануть решил?!","Где остальное, гражданин?!","Считать не умеешь?!","Это грабёж средь бела дня!"];
+const LINES = {
+  ru:["Э, кабан, живее!","Мне на сдачу плевать.","Квас есть? Ладно, чипсы.",
+      "Я на такси приехал вообще-то.","Быстрее, у меня матч.","Мамка сказала эти брать.",
+      "Только не просроченные.","Хрустеть буду в кинотеатре.","Я тут с 8 утра стою.",
+      "Оплата картой? Нет? Кошмар.","Дай пакетик, дай пакетик.","Слышь, а ты реально кабан?",
+      "Мне для собаки. Себе тоже.","Смена у меня, некогда.","Это на день рождения, не осуждай."],
+  en:["Hey boar, faster!","Keep the change, whatever.","Got kvass? Fine, chips then.",
+      "I took a taxi here, y'know.","Hurry, my match is on.","Mom said to grab these.",
+      "Just not the expired ones.","I'll crunch these at the movies.","I've stood here since 8 am.",
+      "Card payment? No? Nightmare.","Gimme a bag, gimme a bag.","Wait, are you really a boar?",
+      "It's for my dog. And me too.","I'm on my shift, no time.","It's for a birthday, no judging."]
+};
+const PAYLINES = {
+  ru:["Сдачу давай.","Мелочи нет, извини.","Только не монетами!","Сдачу до копейки, я считаю.","Ну? Считай давай.","Крупная, других нет."],
+  en:["Change, please.","No coins on me, sorry.","Not in coins!","Exact change, I'm counting.","Well? Count it up.","Big bill, nothing smaller."]
+};
+const HAPPY = {
+  ru:["Ну наконец-то!","Красава, кабан.","Вот это сервис.","Хрум-хрум, спасибо.","Уважаю."],
+  en:["Finally!","Nice one, boar.","Now that's service.","Crunch crunch, thanks.","Respect."]
+};
+const ANGRY = {
+  ru:["Ты чё мне подсунул?!","Я такое не просил, балбес.","Верни бабки!","Ты вообще читать умеешь?"],
+  en:["What did you slip me?!","I didn't order that, goof.","Give my money back!","Can you even read?"]
+};
+const LEFT = {
+  ru:["Да ну тебя.","Всё, я в «Пятёрочку».","Час стою! Час!","Тьфу, кабан."],
+  en:["Forget it.","That's it, I'm off to the store.","An hour! A whole hour!","Ugh, boar."]
+};
+const ROBBED = {
+  ru:["Ты меня обмануть решил?!","Где остальное, гражданин?!","Считать не умеешь?!","Это грабёж средь бела дня!"],
+  en:["Trying to cheat me?!","Where's the rest, citizen?!","Can't you count?!","This is broad-daylight robbery!"]
+};
 
 /* ---------------- АПГРЕЙДЫ ---------------- */
 const UPGRADES = [
-  {id:"price", t:"💸 Жирный ценник",   d:"Наценка «а чего бы нет». Каждая пачка дороже на 20%.", base:420, max:6},
-  {id:"pat",   t:"📺 Телик в очереди", d:"Клиенты залипают в рекламу и терпят на 20% дольше.", base:380, max:5},
-  {id:"tip",   t:"🫙 Банка для чаевых", d:"Надпись «на корм кабану». Чаевые +50%.", base:340, max:5},
-  {id:"flow",  t:"📢 Баннер у трассы", d:"Народ прёт гуще. Больше клиентов — больше бабок.", base:500, max:5},
-  {id:"nerv",  t:"☕ Кофе под кассой", d:"Восстанавливает одно сердечко нервов. Сразу.", base:300, max:99},
-  {id:"time",  t:"⏰ Продлёнка",        d:"Смена длиннее на 8 секунд. Директор не против.", base:450, max:5},
+  {id:"price", base:420, max:6},
+  {id:"pat",   base:380, max:5},
+  {id:"tip",   base:340, max:5},
+  {id:"flow",  base:500, max:5},
+  {id:"nerv",  base:300, max:99},
+  {id:"time",  base:450, max:5},
 ];
+const UPTEXT = {
+  ru:{
+    price:{t:"💸 Жирный ценник",   d:"Наценка «а чего бы нет». Каждая пачка дороже на 20%."},
+    pat:  {t:"📺 Телик в очереди", d:"Клиенты залипают в рекламу и терпят на 20% дольше."},
+    tip:  {t:"🫙 Банка для чаевых", d:"Надпись «на корм кабану». Чаевые +50%."},
+    flow: {t:"📢 Баннер у трассы", d:"Народ прёт гуще. Больше клиентов — больше бабок."},
+    nerv: {t:"☕ Кофе под кассой", d:"Восстанавливает одно сердечко нервов. Сразу."},
+    time: {t:"⏰ Продлёнка",        d:"Смена длиннее на 8 секунд. Директор не против."}
+  },
+  en:{
+    price:{t:"💸 Fat Price Tag",       d:"'Why not' markup. Every pack +20% pricier."},
+    pat:  {t:"📺 TV in the Line",      d:"Ads hypnotize customers — they wait 20% longer."},
+    tip:  {t:"🫙 Tip Jar",             d:"'Feed the boar' label. Tips +50%."},
+    flow: {t:"📢 Roadside Banner",     d:"Crowds pour in. More customers, more cash."},
+    nerv: {t:"☕ Coffee Under the Till", d:"Restores one nerve heart. Instantly."},
+    time: {t:"⏰ Overtime",            d:"Shift is 8 seconds longer. Boss is fine with it."}
+  }
+};
+
+/* ---------------- СТРОКИ ИНТЕРФЕЙСА / UI STRINGS ---------------- */
+const T = {
+  ru:{
+    ooo:"Общество с ограниченной ответственностью",
+    title:"«КАБАН БЛИННННН»",
+    sub1:"🥔 ЧИПСЫ КАБАНА — ХРУСТИМ С 1997 ГОДА 🥔",
+    welcome:"Добро пожаловать, дорогой ты наш покупатель.<br>Касса вон там. Не толпимся, товарищи.",
+    rules:"<b>ТЫ</b> — кабан за прилавком. Твоя задача — не опозориться.<br>"+
+      "🔸 Кликай пачки на полке, собери <b>ровно заказ</b> → жми <b>ВЫДАТЬ</b>.<br>"+
+      "🔸 Клиент суёт купюру — со 2-й смены надо <b>отсчитать сдачу</b> купюрами. Точно — жирные чаевые.<br>"+
+      "🔸 Ошибся, недодал сдачи или клиент устал ждать — минус <b>нервы</b>. Кончились — кабан ушёл на перерыв.<br>"+
+      "🔸 Раз за смену случается <b>🔥 НАПЛЫВ</b>: 10 секунд толпы и двойной ценник. Держись.<br>"+
+      "🔸 В конце смены платим <b>аренду</b>. Не заплатил — ООО прикрыли.<br>"+
+      "🔸 Клавиши: <b>1—6</b> товар / купюры, <b>Q W E R</b> клиент, <b>Enter</b> выдать, <b>Backspace</b> убрать, <b>M</b> музыка.",
+    start:"ОТКРЫТЬ МАГАЗИН 🔑",
+    day:"Смена", rent:"Аренда", sec:"с",
+    counter:"Прилавок:", change:"Сдача:",
+    clear:"СМЕСТИ ВСЁ 🧹", serve:"ВЫДАТЬ 🤝",
+    clearCash:"ЗАБРАТЬ ОБРАТНО ↩️", serveCash:"ОТДАТЬ СДАЧУ 💸",
+    rushBanner:"🔥 НАПЛЫВ! ЦЕНЫ ×2 — ",
+    notePaid:"Товар отдан. Дал", notePrice:"Ценник:",
+    queueEmpty:"Пусто. Кабан протирает прилавок хвостом…",
+    countHint:"— отсчитай купюрами —", trayEmpty:"— пусто —", remove:"Убрать",
+    shop:'ЗАКУПКА И МОДЕРНИЗАЦИЯ (в кассе: <b style="color:var(--gold)" id="seCash">0</b> ₽)',
+    ad:"🎬 Реклама: +300 ₽", next:"СЛЕДУЮЩАЯ СМЕНА ➡️",
+    seTitle:d=>`СМЕНА ${d} ЗАКРЫТА`,
+    leadPerfect:"Ни один клиент не ушёл. Кабан собой доволен, аж хрюкает.",
+    leadLost:n=>`Ушло недовольных: ${n}. Кабан делает вид, что не заметил.`,
+    rServed:"Обслужено рыл", rRevenue:"Выручка с чипсов", rTips:"Чаевые",
+    rLoss:"Потеряно на сдаче", rRent:"Аренда ларька", rLeft:"В кассе осталось",
+    upLv:(lv,mx)=>`ур. ${lv}/${mx}`, nervOk:"нервы целы", upMax:"НЕ НАДО",
+    ovNervTitle:"КАБАН УШЁЛ НА ПЕРЕРЫВ",
+    ovNervLead:"Нервы кончились. Ларёк закрыт на «технический перерыв» бессрочно.",
+    ovRentTitle:"ООО ЛИКВИДИРОВАНО",
+    ovRentLead:(r,m)=>`Аренда ${r} ₽, а в кассе ${m} ₽. Арендодатель вынес дверь вместе с косяком.`,
+    rec:"🏆 НОВЫЙ РЕКОРД! 🏆", again:"ЕЩЁ РАЗ 🔁",
+    rDays:"Продержался смен", rTotal:"Всего обслужено", rPerfect:"Сдача до копейки",
+    perfectTimes:n=>`${n} раз`, rLeftCash:"Осталось в кассе", rRecord:"🏆 Рекорд",
+    recDays:n=>`${n} смен`,
+    rushBus:"🔥 АВТОБУС ПРИЕХАЛ! ВСЕ ХОТЯТ ЧИПСОВ!",
+    rushEnd:"Толпа схлынула. Кабан вытирает пот пятаком.",
+    pNotIt:"НЕ ТО!", pUnder:"НЕДОДАЛ!", pPerfect:"СДАЧА ТОЧНО! 🎯",
+    pLeft:"УШЁЛ 😤", pLeftGoods:b=>`УШЁЛ С ТОВАРОМ! −${b} ₽`, pOver:o=>`−${o} ₽ мимо кассы`,
+    tEmptyChange:"Пустой рукой сдачу отдаёшь? Совсем обнаглел.",
+    tOver:"Клиент молча слинял с лишними деньгами. Красавчик.",
+    tNoCust:"Ты кому выдаёшь-то? Выбери клиента.", tEmptyTray:"Прилавок пустой, кабан.",
+    tLeftChange:"Устал ждать сдачу и ушёл вместе с чипсами и деньгами.",
+    happyTip:(l,t)=>`${l} (чаевые ${t} ₽)`,
+    best:(d,s,m)=>`🏆 РЕКОРД: ${d} смен · обслужено ${s} рыл · ${m} ₽ в кассе`
+  },
+  en:{
+    ooo:"Limited Liability Company",
+    title:"«BOAR BLIN»",
+    sub1:"🥔 BOAR CHIPS — CRUNCHING SINCE 1997 🥔",
+    welcome:"Welcome, our dear customer.<br>The register's over there. No crowding, folks.",
+    rules:"<b>YOU</b> are the boar behind the counter. Your job — don't blow it.<br>"+
+      "🔸 Click packs on the shelf, assemble the <b>exact order</b> → hit <b>SERVE</b>.<br>"+
+      "🔸 A customer pays with a bill — from shift 2 you must <b>count out change</b> in notes. Exact — fat tips.<br>"+
+      "🔸 Wrong order, short change or a tired customer — you lose <b>nerves</b>. Out of them — the boar takes a break.<br>"+
+      "🔸 Once per shift comes a <b>🔥 RUSH</b>: 10 seconds of crowd and double prices. Hang on.<br>"+
+      "🔸 At shift's end you pay <b>rent</b>. Can't pay — the shop gets shut down.<br>"+
+      "🔸 Keys: <b>1—6</b> goods / bills, <b>Q W E R</b> customer, <b>Enter</b> serve, <b>Backspace</b> undo, <b>M</b> music.",
+    start:"OPEN THE SHOP 🔑",
+    day:"Day", rent:"Rent", sec:"s",
+    counter:"Counter:", change:"Change:",
+    clear:"SWEEP IT ALL 🧹", serve:"SERVE 🤝",
+    clearCash:"TAKE IT BACK ↩️", serveCash:"GIVE CHANGE 💸",
+    rushBanner:"🔥 RUSH! PRICES ×2 — ",
+    notePaid:"Order given. Paid", notePrice:"Price:",
+    queueEmpty:"Empty. The boar wipes the counter with its tail…",
+    countHint:"— count it out in notes —", trayEmpty:"— empty —", remove:"Remove",
+    shop:'RESTOCK & UPGRADES (in the till: <b style="color:var(--gold)" id="seCash">0</b> ₽)',
+    ad:"🎬 Ad: +300 ₽", next:"NEXT SHIFT ➡️",
+    seTitle:d=>`SHIFT ${d} CLOSED`,
+    leadPerfect:"Not a single customer left. The boar is pleased, oinking.",
+    leadLost:n=>`Unhappy walkouts: ${n}. The boar pretends not to notice.`,
+    rServed:"Customers served", rRevenue:"Chips revenue", rTips:"Tips",
+    rLoss:"Lost on change", rRent:"Stall rent", rLeft:"Left in the till",
+    upLv:(lv,mx)=>`lvl ${lv}/${mx}`, nervOk:"nerves full", upMax:"MAXED",
+    ovNervTitle:"THE BOAR TOOK A BREAK",
+    ovNervLead:"Out of nerves. The stall is closed for 'maintenance' indefinitely.",
+    ovRentTitle:"COMPANY LIQUIDATED",
+    ovRentLead:(r,m)=>`Rent is ${r} ₽, but only ${m} ₽ in the till. The landlord took the door, frame and all.`,
+    rec:"🏆 NEW RECORD! 🏆", again:"AGAIN 🔁",
+    rDays:"Shifts survived", rTotal:"Total served", rPerfect:"Exact change",
+    perfectTimes:n=>`${n} times`, rLeftCash:"Left in the till", rRecord:"🏆 Record",
+    recDays:n=>`${n} shifts`,
+    rushBus:"🔥 A BUS PULLED UP! EVERYONE WANTS CHIPS!",
+    rushEnd:"The crowd is gone. The boar wipes its snout.",
+    pNotIt:"WRONG!", pUnder:"SHORT!", pPerfect:"EXACT CHANGE! 🎯",
+    pLeft:"LEFT 😤", pLeftGoods:b=>`LEFT WITH GOODS! −${b} ₽`, pOver:o=>`−${o} ₽ out the window`,
+    tEmptyChange:"Handing it over empty-handed? The nerve.",
+    tOver:"The customer silently slipped off with the extra cash. Legend.",
+    tNoCust:"Serving whom? Pick a customer.", tEmptyTray:"The counter's empty, boar.",
+    tLeftChange:"Got tired of waiting for change and left with the chips and the money.",
+    happyTip:(l,t)=>`${l} (tip ${t} ₽)`,
+    best:(d,s,m)=>`🏆 RECORD: ${d} shifts · served ${s} · ${m} ₽ in the till`
+  }
+};
+function tr(k){
+  var v=(T[LANG]||T.ru)[k];
+  if(typeof v==="function") return v.apply(null, Array.prototype.slice.call(arguments,1));
+  return v;
+}
+
+/* Заполнить статичные надписи по текущему языку */
+function applyStatic(){
+  $("lblOoo").textContent=tr("ooo");
+  $("lblTitle").textContent=tr("title");
+  $("lblSub1").textContent=tr("sub1");
+  $("lblWelcome").innerHTML=tr("welcome");
+  $("rulesBox").innerHTML=tr("rules");
+  $("startBtn").textContent=tr("start");
+  $("lblDay").textContent=tr("day");
+  $("lblRent").textContent=tr("rent");
+  $("lblSec").textContent=tr("sec");
+  $("lblRush").textContent=tr("rushBanner");
+  $("lblShop").innerHTML=tr("shop");
+  $("nextBtn").textContent=tr("next");
+  $("adBtn").textContent=tr("ad");
+  $("againBtn").textContent=tr("again");
+  $("ovRec").textContent=tr("rec");
+  document.documentElement.lang = LANG;
+}
 
 /* ---------------- ХРАНИЛИЩЕ ---------------- */
 const LS_BEST="kaban_best_v1", LS_MUTE="kaban_mute_v1";
@@ -328,7 +496,7 @@ function renderBest(){
   const b=$("bestBox");
   if(BEST.days>0){
     b.classList.add("on");
-    b.innerHTML = `🏆 РЕКОРД: ${BEST.days} смен · обслужено ${BEST.served} рыл · ${BEST.money} ₽ в кассе`;
+    b.innerHTML = tr("best", BEST.days, BEST.served, BEST.money);
   }else{
     b.classList.remove("on");
   }
@@ -426,7 +594,7 @@ function activeCust(){ return S.customers.find(c=>c.id===S.sel && !c.gone) || nu
 function inPay(){ const c=activeCust(); return !!(c && c.stage==="pay"); }
 
 function buildShelf(){
-  const sh=$("shelf"), tr=$("tray"), acts=$("acts");
+  const sh=$("shelf");
   const pay = inPay();
   sh.className = "shelf" + (pay?" cash":"");
   sh.innerHTML="";
@@ -438,8 +606,8 @@ function buildShelf(){
       el.onclick=()=>addChange(i);
       sh.appendChild(el);
     });
-    $("clearBtn").textContent="ЗАБРАТЬ ОБРАТНО ↩️";
-    $("serveBtn").textContent="ОТДАТЬ СДАЧУ 💸";
+    $("clearBtn").textContent=tr("clearCash");
+    $("serveBtn").textContent=tr("serveCash");
     $("serveBtn").className="btn wide green";
   }else{
     FLAVORS.forEach((f,i)=>{
@@ -449,8 +617,8 @@ function buildShelf(){
       el.onclick=()=>addToTray(i);
       sh.appendChild(el);
     });
-    $("clearBtn").textContent="СМЕСТИ ВСЁ 🧹";
-    $("serveBtn").textContent="ВЫДАТЬ 🤝";
+    $("clearBtn").textContent=tr("clear");
+    $("serveBtn").textContent=tr("serve");
     $("serveBtn").className="btn wide";
   }
 }
@@ -515,7 +683,7 @@ function startRush(){
   S.rush=true; S.rushDone=true; S.rushT=10;
   document.body.classList.add("rushing");
   $("rush").classList.add("on");
-  toast("🔥 АВТОБУС ПРИЕХАЛ! ВСЕ ХОТЯТ ЧИПСОВ!");
+  toast(tr("rushBus"));
   beep(300,.15,"sawtooth",.07);
   setTimeout(()=>beep(500,.2,"sawtooth",.07),150);
 }
@@ -523,7 +691,7 @@ function stopRush(){
   S.rush=false;
   document.body.classList.remove("rushing");
   $("rush").classList.remove("on");
-  toast("Толпа схлынула. Кабан вытирает пот пятаком.");
+  toast(tr("rushEnd"));
 }
 
 function spawn(){
@@ -536,7 +704,7 @@ function spawn(){
   }
   const p=patienceFor();
   S.customers.push({
-    id:S.nextId++, face:rnd(FACES), say:rnd(LINES),
+    id:S.nextId++, face:rnd(FACES), say:rnd(LA(LINES)),
     order, pat:p, maxPat:p, gone:false,
     stage:"order", bill:0, total:0, change:0, given:[]
   });
@@ -603,7 +771,7 @@ function toPayStage(c){
   c.bill = opts[Math.floor(Math.random()*Math.min(2,opts.length))];
   c.change = c.bill - total;
   c.stage="pay";
-  c.say=rnd(PAYLINES);
+  c.say=rnd(LA(PAYLINES));
   S.money += c.bill;
   popText(`+${c.bill} ₽`, "#6ee36e");
   beep(660,.08,"square",.05);
@@ -615,7 +783,7 @@ function giveChange(){
   const c=activeCust();
   if(!c||c.stage!=="pay") return;
   const given=sum(c.given);
-  if(given===0){ toast("Пустой рукой сдачу отдаёшь? Совсем обнаглел."); return; }
+  if(given===0){ toast(tr("tEmptyChange")); return; }
   S.money -= given;
 
   if(given===c.change){
@@ -624,8 +792,8 @@ function giveChange(){
   }else if(given>c.change){
     const over=given-c.change;
     S.dayLoss += over;
-    popText(`−${over} ₽ мимо кассы`, "#ff4d4d");
-    toast("Клиент молча слинял с лишними деньгами. Красавчик.");
+    popText(tr("pOver", over), "#ff4d4d");
+    toast(tr("tOver"));
     beep(200,.2,"sawtooth",.05);
     finishCustomer(c, 0, true);
   }else{
@@ -633,8 +801,8 @@ function giveChange(){
     S.money -= under;
     S.dayRevenue += c.total;
     S.nerv--;
-    popText("НЕДОДАЛ!", "#ff4d4d");
-    toast(rnd(ROBBED));
+    popText(tr("pUnder"), "#ff4d4d");
+    toast(rnd(LA(ROBBED)));
     beep(140,.3,"sawtooth",.06);
     c.gone=true; removeCust(c);
     buildShelf(); renderAll();
@@ -652,7 +820,7 @@ function finishCustomer(c, tipMult, silent){
     beep(660,.08,"square",.05);
     setTimeout(()=>beep(880,.12,"square",.05),80);
   }else if(tipMult>=1.6){
-    popText("СДАЧА ТОЧНО! 🎯", "#6ee36e");
+    popText(tr("pPerfect"), "#6ee36e");
     beep(880,.09,"square",.05);
     setTimeout(()=>beep(1174,.14,"square",.05),90);
   }
@@ -660,7 +828,7 @@ function finishCustomer(c, tipMult, silent){
   S.dayRevenue += c.total;
   S.dayTips += tip;
   S.served++; S.totalServed++;
-  if(!silent) toast(tip>0 ? `${rnd(HAPPY)} (чаевые ${tip} ₽)` : rnd(HAPPY));
+  if(!silent) toast(tip>0 ? tr("happyTip", rnd(LA(HAPPY)), tip) : rnd(LA(HAPPY)));
   c.gone=true;
   removeCust(c);
   S.tray=[];
@@ -671,15 +839,15 @@ function serve(){
   if(!S||!S.running) return;
   if(inPay()){ giveChange(); return; }
   const c=activeCust();
-  if(!c){ toast("Ты кому выдаёшь-то? Выбери клиента."); return; }
-  if(!S.tray.length){ toast("Прилавок пустой, кабан."); return; }
+  if(!c){ toast(tr("tNoCust")); return; }
+  if(!S.tray.length){ toast(tr("tEmptyTray")); return; }
 
   if(matches(c)){
     toPayStage(c);
   }else{
     S.nerv--;
-    popText("НЕ ТО!","#ff4d4d");
-    toast(rnd(ANGRY));
+    popText(tr("pNotIt"),"#ff4d4d");
+    toast(rnd(LA(ANGRY)));
     beep(140,.3,"sawtooth",.06);
     c.gone=true; removeCust(c);
     S.tray=[];
@@ -692,12 +860,12 @@ function loseCustomer(c){
   S.nerv--; S.lost++;
   if(c.stage==="pay"){
     S.money -= c.bill;
-    popText(`УШЁЛ С ТОВАРОМ! −${c.bill} ₽`,"#ff4d4d");
+    popText(tr("pLeftGoods", c.bill),"#ff4d4d");
     S.dayLoss += c.bill;
-    toast("Устал ждать сдачу и ушёл вместе с чипсами и деньгами.");
+    toast(tr("tLeftChange"));
   }else{
-    popText("УШЁЛ 😤","#ff4d4d");
-    toast(rnd(LEFT));
+    popText(tr("pLeft"),"#ff4d4d");
+    toast(rnd(LA(LEFT)));
   }
   beep(120,.25,"sawtooth",.05);
   removeCust(c);
@@ -739,7 +907,7 @@ function renderPatience(){
 function renderQueue(){
   const q=$("queue");
   if(!S.customers.length){
-    q.innerHTML='<div class="empty">Пусто. Кабан протирает прилавок хвостом…</div>';
+    q.innerHTML='<div class="empty">'+tr("queueEmpty")+'</div>';
     return;
   }
   const t=trayCounts();
@@ -750,7 +918,7 @@ function renderQueue(){
     d.dataset.id=c.id;
     let body;
     if(c.stage==="pay"){
-      body=`<div class="money-note">Товар отдан. Дал <b>${c.bill} ₽</b><br>Ценник: <b>${c.total} ₽</b></div>`;
+      body=`<div class="money-note">${tr("notePaid")} <b>${c.bill} ₽</b><br>${tr("notePrice")} <b>${c.total} ₽</b></div>`;
     }else{
       body='<div class="order">'+c.order.map(o=>{
         const have=(c.id===S.sel)&&(t[o.f]||0)===o.q;
@@ -771,42 +939,42 @@ function renderQueue(){
 }
 
 function renderTray(){
-  const tr=$("tray");
+  const trayEl=$("tray");
   const c=activeCust();
   const pay=!!(c&&c.stage==="pay");
-  tr.className="tray"+(pay?" cash":"");
-  tr.innerHTML="";
+  trayEl.className="tray"+(pay?" cash":"");
+  trayEl.innerHTML="";
   const lbl=document.createElement("span");
   lbl.className="lbl";
-  lbl.textContent = pay ? "Сдача:" : "Прилавок:";
-  tr.appendChild(lbl);
+  lbl.textContent = pay ? tr("change") : tr("counter");
+  trayEl.appendChild(lbl);
 
   if(pay){
     if(!c.given.length){
       const s=document.createElement("span");
-      s.className="lbl"; s.style.color="#6b4726"; s.textContent="— отсчитай купюрами —";
-      tr.appendChild(s);
+      s.className="lbl"; s.style.color="#6b4726"; s.textContent=tr("countHint");
+      trayEl.appendChild(s);
     }
     c.given.forEach((v,i)=>{
       const e=document.createElement("span");
       e.className="chip c"; e.textContent=v+" ₽";
       e.onclick=()=>removeChange(i);
-      tr.appendChild(e);
+      trayEl.appendChild(e);
     });
     const s=document.createElement("span");
     s.className="sum"; s.textContent="= "+sum(c.given)+" ₽";
-    tr.appendChild(s);
+    trayEl.appendChild(s);
   }else{
     if(!S.tray.length){
       const s=document.createElement("span");
-      s.className="lbl"; s.style.color="#6b4726"; s.textContent="— пусто —";
-      tr.appendChild(s);
+      s.className="lbl"; s.style.color="#6b4726"; s.textContent=tr("trayEmpty");
+      trayEl.appendChild(s);
     }
     S.tray.forEach((f,i)=>{
       const e=document.createElement("span");
-      e.className="chip"; e.textContent=FLAVORS[f].em; e.title="Убрать";
+      e.className="chip"; e.textContent=FLAVORS[f].em; e.title=tr("remove");
       e.onclick=()=>removeFromTray(i);
-      tr.appendChild(e);
+      trayEl.appendChild(e);
     });
   }
 }
@@ -839,22 +1007,20 @@ function endShift(){
   if(S.money<rent){ gameOver("rent"); return; }
   S.money-=rent;
 
-  $("seTitle").textContent=`СМЕНА ${S.day} ЗАКРЫТА`;
-  $("seLead").textContent = S.lost===0
-    ? "Ни один клиент не ушёл. Кабан собой доволен, аж хрюкает."
-    : `Ушло недовольных: ${S.lost}. Кабан делает вид, что не заметил.`;
+  $("seTitle").textContent=tr("seTitle", S.day);
+  $("seLead").textContent = S.lost===0 ? tr("leadPerfect") : tr("leadLost", S.lost);
 
   $("seRows").innerHTML=
-    `<div><span>Обслужено рыл</span><b>${S.served}</b></div>`+
-    `<div><span>Выручка с чипсов</span><b>${S.dayRevenue} ₽</b></div>`+
-    `<div><span>Чаевые</span><b>${S.dayTips} ₽</b></div>`+
-    (S.dayLoss?`<div class="neg"><span>Потеряно на сдаче</span><b>−${S.dayLoss} ₽</b></div>`:"")+
-    `<div class="neg"><span>Аренда ларька</span><b>−${rent} ₽</b></div>`+
-    `<div class="tot"><span>В кассе осталось</span><b>${S.money} ₽</b></div>`;
+    `<div><span>${tr("rServed")}</span><b>${S.served}</b></div>`+
+    `<div><span>${tr("rRevenue")}</span><b>${S.dayRevenue} ₽</b></div>`+
+    `<div><span>${tr("rTips")}</span><b>${S.dayTips} ₽</b></div>`+
+    (S.dayLoss?`<div class="neg"><span>${tr("rLoss")}</span><b>−${S.dayLoss} ₽</b></div>`:"")+
+    `<div class="neg"><span>${tr("rRent")}</span><b>−${rent} ₽</b></div>`+
+    `<div class="tot"><span>${tr("rLeft")}</span><b>${S.money} ₽</b></div>`;
 
   renderUpgrades();
   var ab=$("adBtn");
-  if(ab){ ab.style.display = hasAdv() ? "" : "none"; ab.textContent="🎬 Реклама: +300 ₽"; }
+  if(ab){ ab.style.display = hasAdv() ? "" : "none"; ab.textContent=tr("ad"); }
   show("shiftend");
 }
 
@@ -869,10 +1035,11 @@ function renderUpgrades(){
     const can = !maxed && S.money>=cost;
     const d=document.createElement("div");
     d.className="up"+(can?"":" no");
+    const ut=UPTEXT[LANG][u.id] || UPTEXT.ru[u.id];
     d.innerHTML=
-      `<span class="lv">${u.id==="nerv" ? (S.nerv>=S.maxNerv?"нервы целы":"") : "ур. "+lv+"/"+u.max}</span>`+
-      `<div class="t">${u.t}</div><div class="d">${u.d}</div>`+
-      `<div class="p">${maxed?"НЕ НАДО":cost+" ₽"}</div>`;
+      `<span class="lv">${u.id==="nerv" ? (S.nerv>=S.maxNerv?tr("nervOk"):"") : tr("upLv", lv, u.max)}</span>`+
+      `<div class="t">${ut.t}</div><div class="d">${ut.d}</div>`+
+      `<div class="p">${maxed?tr("upMax"):cost+" ₽"}</div>`;
     if(can) d.onclick=()=>buy(u);
     box.appendChild(d);
   });
@@ -903,12 +1070,12 @@ function gameOver(reason){
   const days=S.day-1;
   if(reason==="nerv"){
     $("ovEmoji").textContent="🐗💤";
-    $("ovTitle").textContent="КАБАН УШЁЛ НА ПЕРЕРЫВ";
-    $("ovLead").textContent="Нервы кончились. Ларёк закрыт на «технический перерыв» бессрочно.";
+    $("ovTitle").textContent=tr("ovNervTitle");
+    $("ovLead").textContent=tr("ovNervLead");
   }else{
     $("ovEmoji").textContent="🏚️";
-    $("ovTitle").textContent="ООО ЛИКВИДИРОВАНО";
-    $("ovLead").textContent=`Аренда ${rent} ₽, а в кассе ${S.money} ₽. Арендодатель вынес дверь вместе с косяком.`;
+    $("ovTitle").textContent=tr("ovRentTitle");
+    $("ovLead").textContent=tr("ovRentLead", rent, S.money);
   }
 
   const rec = days>BEST.days || (days===BEST.days && S.totalServed>BEST.served);
@@ -924,11 +1091,11 @@ function gameOver(reason){
   }
 
   $("ovRows").innerHTML=
-    `<div><span>Продержался смен</span><b>${days}</b></div>`+
-    `<div><span>Всего обслужено</span><b>${S.totalServed}</b></div>`+
-    `<div><span>Сдача до копейки</span><b>${S.perfectChange} раз</b></div>`+
-    `<div><span>Осталось в кассе</span><b>${S.money} ₽</b></div>`+
-    `<div class="tot"><span>🏆 Рекорд</span><b>${BEST.days} смен</b></div>`;
+    `<div><span>${tr("rDays")}</span><b>${days}</b></div>`+
+    `<div><span>${tr("rTotal")}</span><b>${S.totalServed}</b></div>`+
+    `<div><span>${tr("rPerfect")}</span><b>${tr("perfectTimes", S.perfectChange)}</b></div>`+
+    `<div><span>${tr("rLeftCash")}</span><b>${S.money} ₽</b></div>`+
+    `<div class="tot"><span>${tr("rRecord")}</span><b>${tr("recDays", BEST.days)}</b></div>`;
 
   renderBest();
   show("over");
@@ -994,6 +1161,7 @@ $("muteBtn").onclick=()=>setMute(!muted);
 $("muteBtn2").onclick=()=>setMute(!muted);
 
 setMute(muted);
+applyStatic();
 renderBest();
 
 /* §1.3 — пауза звука и музыки при потере фокуса вкладки (сворачивание, смена вкладки) */
@@ -1020,9 +1188,14 @@ function initYandex(){
   YaGames.init().then(function(sdk){
     window.ysdk = sdk;
     try{
-      // автоопределение языка при запуске
+      // автоопределение языка при запуске (§2.14) — переключаем интерфейс ru/en
       var lang = sdk.environment && sdk.environment.i18n && sdk.environment.i18n.lang;
-      if(lang) window.gameLang = lang;                  // игра одноязычная (ru), но язык считываем
+      if(lang){
+        window.gameLang = lang;
+        setLang(lang);
+        applyStatic();
+        renderBest();
+      }
     }catch(e){}
     // сообщаем платформе, что игра загрузилась (убирает лоадер Яндекса)
     try{ if(sdk.features && sdk.features.LoadingAPI) sdk.features.LoadingAPI.ready(); }catch(e){}
