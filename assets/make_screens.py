@@ -84,13 +84,15 @@ def stat(img,d,x,y,txt,val,bad=False):
     rich(img,d,x+14+tw,y+21,val,fv,(RED if bad else GOLD),20)
     return box[2]
 
-def hud(img,d,money,day,rent,hearts,tsec):
+def hud(img,d,money,day,rent,hearts,tsec,lang="ru"):
+    dayL = "Day" if lang=="en" else "Смена"
+    rentL = "Rent" if lang=="en" else "Аренда"
     rr(d,(0,0,W,58),0,fill=(26,17,9))
     d.line((0,58,W,58),fill=LINE,width=3)
     x=24
     x=stat(img,d,x,8,"💰",f"{money}")+10
-    x=stat(img,d,x,8,"📅 Смена",f"{day}")+10
-    x=stat(img,d,x,8,"🏦 Аренда",f"{rent}")+10
+    x=stat(img,d,x,8,f"📅 {dayL}",f"{day}")+10
+    x=stat(img,d,x,8,f"🏦 {rentL}",f"{rent}")+10
     x=stat(img,d,x,8,"🧠",hearts)+10
     x=stat(img,d,x,8,"⏱",f"{tsec}")+10
     # timer bar
@@ -100,7 +102,7 @@ def hud(img,d,money,day,rent,hearts,tsec):
         t=i/W; col=(int(110+145*t),int(227-47*t),int(110-50*t))
         d.line((i,58,i,65),fill=col)
 
-def cust_card(img,d,x,y,face,order_items,say,pat,sel=False,pay=None,hint=""):
+def cust_card(img,d,x,y,face,order_items,say,pat,sel=False,pay=None,hint="",lang="ru"):
     w,hh=210,220
     fill=PANEL2 if not pay else (61,52,24)
     oc=GOLD if sel else (201,160,44) if pay else LINE
@@ -111,9 +113,11 @@ def cust_card(img,d,x,y,face,order_items,say,pat,sel=False,pay=None,hint=""):
     if pay: pc(img,emoji("💰",26),x+w-6,y-2)
     pc(img,emoji(face,54),x+w/2,y+38)
     if pay:
-        d.text((x+w/2,y+80),"Товар отдан. Дал",font=font(REG,13),fill=CREAM,anchor="mm")
+        paid = "Order given. Paid" if lang=="en" else "Товар отдан. Дал"
+        price = "Price:" if lang=="en" else "Ценник:"
+        d.text((x+w/2,y+80),paid,font=font(REG,13),fill=CREAM,anchor="mm")
         d.text((x+w/2,y+100),f"{pay[0]} ₽",font=font(BLACK,20),fill=GOLD,anchor="mm")
-        d.text((x+w/2,y+124),f"Ценник: {pay[1]} ₽",font=font(REG,13),fill=CREAM,anchor="mm")
+        d.text((x+w/2,y+124),f"{price} {pay[1]} ₽",font=font(REG,13),fill=CREAM,anchor="mm")
     else:
         ox=x+w/2-(len(order_items)*46)/2+23
         for em,q,done in order_items:
@@ -175,90 +179,136 @@ def banner(img,d,txt):
     rr(d,(x0,70,W-x0,124),14,fill=(184,31,0),outline=(255,208,160),width=3)
     rich(img,d,W/2,98,txt,f,(255,255,255),28,anchor="mm")
 
-FLAV=[("🦀","Крабовые","1","x"),("🥓","Бекон","2","x"),("🧅","Лук-сметана","3","x"),
-      ("🌶️","Паприка","4","x"),("🧀","Сыр","5","x"),("🐟","Вобла","6","x")]
+FLAV_NM = {
+  "ru":["Крабовые","Бекон","Лук-сметана","Паприка","Сыр","Вобла"],
+  "en":["Crab","Bacon","Onion & Cream","Paprika","Cheese","Fish"],
+}
+def FLAV(lang):
+    em=["🦀","🥓","🧅","🌶️","🧀","🐟"]
+    return [(em[i],FLAV_NM[lang][i],str(i+1),"x") for i in range(6)]
 CASH=[("🪙","10 ₽","1","coin"),("🪙","50 ₽","2","coin"),("💵","100 ₽","3","bill"),
       ("💵","500 ₽","4","bill"),("💶","1000 ₽","5","bill")]
 
-# ---------- 1: ПРИЁМ ЗАКАЗА ----------
-def screen_order():
-    img=bg(); d=ImageDraw.Draw(img)
-    hud(img,d,340,1,395,"❤❤❤❤❤",47)
-    cy=96
-    cust_card(img,d,340,cy,"🧔",[("🦀",1,True),("🧀",1,False)],"Мамка сказала эти брать.",0.72,sel=True,hint="Q")
-    cust_card(img,d,560,cy,"👵",[("🌶️",2,False)],"Я тут с 8 утра стою.",0.5,hint="W")
-    cust_card(img,d,780,cy,"👮",[("🐟",1,False)],"Быстрее, у меня матч.",0.85,hint="E")
-    tray(img,d,332,"ПРИЛАВОК:",["🦀","🧀"])
-    shelf(img,d,418,FLAV)
-    buttons(img,d,524,"СМЕСТИ ВСЁ 🧹","ВЫДАТЬ 🤝")
-    # подпись
-    d.text((W/2,650),"Собери ровно заказ и жми ВЫДАТЬ",font=font(BOLD,20),fill=DIM,anchor="mm")
-    img.convert("RGB").save(os.path.join(OUT,"screen-1-order.png"))
+ST = {
+ "ru":{
+  "counter":"ПРИЛАВОК:", "change":"СДАЧА:",
+  "clear":"СМЕСТИ ВСЁ 🧹", "serve":"ВЫДАТЬ 🤝",
+  "clearCash":"ЗАБРАТЬ ОБРАТНО", "serveCash":"ОТДАТЬ СДАЧУ 💸",
+  "capOrder":"Собери ровно заказ и жми ВЫДАТЬ",
+  "capChange":"Отсчитай сдачу купюрами — точно до рубля дают чаевые",
+  "capRush":"Раз за смену — 10 секунд толпы и двойной ценник",
+  "rushBanner":"🔥 НАПЛЫВ! ЦЕНЫ ×2 — 6",
+  "seTitle":"СМЕНА 2 ЗАКРЫТА",
+  "seLead":"Ни один клиент не ушёл. Кабан доволен, аж хрюкает.",
+  "rows":[("Обслужено рыл","16"),("Выручка с чипсов","2340 ₽"),("Чаевые","927 ₽"),
+          ("Аренда ларька","−395 ₽"),("В кассе осталось","2872 ₽")],
+  "ups":[("💸 Жирный ценник","Каждая пачка дороже на 20%","420 ₽"),
+         ("📺 Телик в очереди","Клиенты терпят на 20% дольше","380 ₽"),
+         ("🥫 Банка для чаевых","Чаевые +50%","340 ₽"),
+         ("📢 Баннер у трассы","Больше клиентов — больше бабок","500 ₽")],
+  "next":"СЛЕДУЮЩАЯ СМЕНА",
+  "lines":["Мамка сказала эти брать.","Я тут с 8 утра стою.","Быстрее, у меня матч.",
+           "Сдачу до рубля, я считаю.","Дай пакетик, дай пакетик.",
+           "Живее, кабан!","Мне для собаки. Себе тоже.","На день рождения.","Час стою! Час!"],
+ },
+ "en":{
+  "counter":"COUNTER:", "change":"CHANGE:",
+  "clear":"SWEEP IT ALL 🧹", "serve":"SERVE 🤝",
+  "clearCash":"TAKE IT BACK", "serveCash":"GIVE CHANGE 💸",
+  "capOrder":"Assemble the exact order and hit SERVE",
+  "capChange":"Count out change in notes — exact to the ruble earns tips",
+  "capRush":"Once per shift — 10 seconds of crowd and double prices",
+  "rushBanner":"🔥 RUSH! PRICES ×2 — 6",
+  "seTitle":"SHIFT 2 CLOSED",
+  "seLead":"Not a single customer left. The boar is pleased, oinking.",
+  "rows":[("Customers served","16"),("Chips revenue","2340 ₽"),("Tips","927 ₽"),
+          ("Stall rent","−395 ₽"),("Left in the till","2872 ₽")],
+  "ups":[("💸 Fat Price Tag","Every pack +20% pricier","420 ₽"),
+         ("📺 TV in the Line","Customers wait 20% longer","380 ₽"),
+         ("🥫 Tip Jar","Tips +50%","340 ₽"),
+         ("📢 Roadside Banner","More customers, more cash","500 ₽")],
+  "next":"NEXT SHIFT",
+  "lines":["Mom said to grab these.","I've stood here since 8 am.","Hurry, my match is on.",
+           "Exact change, I'm counting.","Gimme a bag, gimme a bag.",
+           "Faster, boar!","It's for my dog. And me too.","It's for a birthday.","An hour! A whole hour!"],
+ },
+}
 
-# ---------- 2: ОТСЧЁТ СДАЧИ ----------
-def screen_change():
+def screen_order(lang):
+    s=ST[lang]; L=s["lines"]
     img=bg(); d=ImageDraw.Draw(img)
-    hud(img,d,712,2,776,"❤❤❤❤🖤",38)
+    hud(img,d,340,1,395,"❤❤❤❤❤",47,lang)
     cy=96
-    cust_card(img,d,430,cy,"🐻",None,"Сдачу до рубля, я считаю.",0.6,sel=True,pay=(500,270),hint="Q")
-    cust_card(img,d,650,cy,"🦊",[("🥓",1,False)],"Дай пакетик, дай пакетик.",0.9,hint="W")
-    tray(img,d,332,"СДАЧА:",["100 ₽","100 ₽","10 ₽","10 ₽","10 ₽"],cash=True,total=230)
+    cust_card(img,d,340,cy,"🧔",[("🦀",1,True),("🧀",1,False)],L[0],0.72,sel=True,hint="Q")
+    cust_card(img,d,560,cy,"👵",[("🌶️",2,False)],L[1],0.5,hint="W")
+    cust_card(img,d,780,cy,"👮",[("🐟",1,False)],L[2],0.85,hint="E")
+    tray(img,d,332,s["counter"],["🦀","🧀"])
+    shelf(img,d,418,FLAV(lang))
+    buttons(img,d,524,s["clear"],s["serve"])
+    d.text((W/2,650),s["capOrder"],font=font(BOLD,20),fill=DIM,anchor="mm")
+    return img.convert("RGB")
+
+def screen_change(lang):
+    s=ST[lang]; L=s["lines"]
+    img=bg(); d=ImageDraw.Draw(img)
+    hud(img,d,712,2,776,"❤❤❤❤🖤",38,lang)
+    cy=96
+    cust_card(img,d,430,cy,"🐻",None,L[3],0.6,sel=True,pay=(500,270),hint="Q",lang=lang)
+    cust_card(img,d,650,cy,"🦊",[("🥓",1,False)],L[4],0.9,hint="W")
+    tray(img,d,332,s["change"],["100 ₽","100 ₽","10 ₽","10 ₽","10 ₽"],cash=True,total=230)
     shelf(img,d,418,CASH,cash=True)
-    buttons(img,d,524,"ЗАБРАТЬ ОБРАТНО","ОТДАТЬ СДАЧУ 💸",left_red=False,right_green=True)
-    d.text((W/2,650),"Отсчитай сдачу купюрами — точно до рубля дают чаевые",font=font(BOLD,20),fill=DIM,anchor="mm")
-    img.convert("RGB").save(os.path.join(OUT,"screen-2-change.png"))
+    buttons(img,d,524,s["clearCash"],s["serveCash"],left_red=False,right_green=True)
+    d.text((W/2,650),s["capChange"],font=font(BOLD,20),fill=DIM,anchor="mm")
+    return img.convert("RGB")
 
-# ---------- 3: НАПЛЫВ ----------
-def screen_rush():
+def screen_rush(lang):
+    s=ST[lang]; L=s["lines"]
     img=bg(); d=ImageDraw.Draw(img)
-    # красноватый оттенок
     ov=Image.new("RGBA",(W,H),(120,20,0,50)); img.alpha_composite(ov)
-    hud(img,d,1980,4,1240,"❤❤❤🖤🖤",22)
-    banner(img,d,"🔥 НАПЛЫВ! ЦЕНЫ ×2 — 6")
+    hud(img,d,1980,4,1240,"❤❤❤🖤🖤",22,lang)
+    banner(img,d,s["rushBanner"])
     cy=140
-    cust_card(img,d,120,cy,"🤡",[("🦀",2,False)],"Живее, кабан!",0.35,hint="Q")
-    cust_card(img,d,350,cy,"👽",[("🧅",1,True),("🌶️",1,False)],"Мне для собаки. Себе тоже.",0.55,sel=True,hint="W")
-    cust_card(img,d,580,cy,"🤠",[("🧀",1,False)],"На день рождения.",0.7,hint="E")
-    cust_card(img,d,810,cy,"🧟",[("🐟",2,False)],"Час стою! Час!",0.2,hint="R")
-    tray(img,d,376,"ПРИЛАВОК:",["🧅"])
-    shelf(img,d,462,FLAV)
-    d.text((W/2,650),"Раз за смену — 10 секунд толпы и двойной ценник",font=font(BOLD,20),fill=GOLD2,anchor="mm")
-    img.convert("RGB").save(os.path.join(OUT,"screen-3-rush.png"))
+    cust_card(img,d,120,cy,"🤡",[("🦀",2,False)],L[5],0.35,hint="Q")
+    cust_card(img,d,350,cy,"👽",[("🧅",1,True),("🌶️",1,False)],L[6],0.55,sel=True,hint="W")
+    cust_card(img,d,580,cy,"🤠",[("🧀",1,False)],L[7],0.7,hint="E")
+    cust_card(img,d,810,cy,"🧟",[("🐟",2,False)],L[8],0.2,hint="R")
+    tray(img,d,376,s["counter"],["🧅"])
+    shelf(img,d,462,FLAV(lang))
+    d.text((W/2,650),s["capRush"],font=font(BOLD,20),fill=GOLD2,anchor="mm")
+    return img.convert("RGB")
 
-# ---------- 4: МОДЕРНИЗАЦИЯ ----------
-def screen_upgrades():
+def screen_upgrades(lang):
+    s=ST[lang]
     img=bg(); d=ImageDraw.Draw(img)
     cw,ch=760,600; x0=(W-cw)/2; y0=(H-ch)/2
     rr(d,(x0,y0,x0+cw,y0+ch),18,fill=(35,23,14),outline=LINE,width=4)
-    d.text((W/2,y0+40),"СМЕНА 2 ЗАКРЫТА",font=font(BLACK,34),fill=GOLD,anchor="mm")
-    d.text((W/2,y0+72),"Ни один клиент не ушёл. Кабан доволен, аж хрюкает.",font=font(REG,15),fill=DIM,anchor="mm")
-    rows=[("Обслужено рыл","16"),("Выручка с чипсов","2340 ₽"),("Чаевые","927 ₽"),
-          ("Аренда ларька","−395 ₽"),("В кассе осталось","2872 ₽")]
+    d.text((W/2,y0+40),s["seTitle"],font=font(BLACK,34),fill=GOLD,anchor="mm")
+    d.text((W/2,y0+72),s["seLead"],font=font(REG,15),fill=DIM,anchor="mm")
     yy=y0+110
     d.line((x0+30,yy,x0+cw-30,yy),fill=LINE,width=2)
-    for i,(a,b) in enumerate(rows):
+    for i,(a,b) in enumerate(s["rows"]):
         yy+=38
-        big=(i==len(rows)-1)
+        big=(i==len(s["rows"])-1)
         d.text((x0+34,yy),a,font=font(BOLD,17 if not big else 19),fill=CREAM,anchor="lm")
         col=RED if b.startswith("−") else GOLD
         d.text((x0+cw-34,yy),b,font=font(BLACK,17 if not big else 20),fill=col,anchor="rm")
     d.line((x0+30,yy+22,x0+cw-30,yy+22),fill=LINE,width=2)
-    ups=[("💸 Жирный ценник","Каждая пачка дороже на 20%","420 ₽"),
-         ("📺 Телик в очереди","Клиенты терпят на 20% дольше","380 ₽"),
-         ("🥫 Банка для чаевых","Чаевые +50%","340 ₽"),
-         ("📢 Баннер у трассы","Больше клиентов — больше бабок","500 ₽")]
     ux=x0+30; uy=yy+38; uw=(cw-60-9)/2; uh=78
-    for i,(t,dd,p) in enumerate(ups):
+    for i,(t,dd,p) in enumerate(s["ups"]):
         gx=ux+(i%2)*(uw+9); gy=uy+(i//2)*(uh+9)
         rr(d,(gx,gy,gx+uw,gy+uh),13,fill=PANEL,outline=LINE,width=3)
         rich(img,d,gx+14,gy+19,t,font(BLACK,16),CREAM,18)
         d.text((gx+14,gy+42),dd,font=font(REG,12),fill=DIM,anchor="lm")
         d.text((gx+14,gy+62),p,font=font(BLACK,15),fill=GOLD,anchor="lm")
-    # кнопка
     by=y0+ch-56
     rr(d,(W/2-160,by,W/2+160,by+44),12,fill=GOLD)
-    d.text((W/2,by+22),"СЛЕДУЮЩАЯ СМЕНА",font=font(BLACK,20),fill=(42,22,0),anchor="mm")
-    img.convert("RGB").save(os.path.join(OUT,"screen-4-upgrades.png"))
+    d.text((W/2,by+22),s["next"],font=font(BLACK,20),fill=(42,22,0),anchor="mm")
+    return img.convert("RGB")
 
-screen_order(); screen_change(); screen_rush(); screen_upgrades()
-print("screens saved")
+for lang in ("ru","en"):
+    suf = "" if lang=="ru" else "-en"
+    screen_order(lang).save(os.path.join(OUT,f"screen-1-order{suf}.png"))
+    screen_change(lang).save(os.path.join(OUT,f"screen-2-change{suf}.png"))
+    screen_rush(lang).save(os.path.join(OUT,f"screen-3-rush{suf}.png"))
+    screen_upgrades(lang).save(os.path.join(OUT,f"screen-4-upgrades{suf}.png"))
+print("screens saved: ru + en")

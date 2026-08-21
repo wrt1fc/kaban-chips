@@ -47,7 +47,7 @@ def rounded_border(draw, box, rad, color, width):
     draw.rounded_rectangle(box, radius=rad, outline=color, width=width)
 
 # ---------- ИКОНКА 512x512 ----------
-def make_icon():
+def make_icon(lang="ru"):
     S = 512
     img = vgrad((S, S), (61, 39, 22), (17, 11, 7)).convert("RGBA")
     # тёплое свечение сверху
@@ -72,14 +72,15 @@ def make_icon():
     fries = emoji_img("🍟", 110)
     paste_center(img, fries, S / 2 + 96, 360)
 
-    # надпись КАБАН
+    # надпись КАБАН / BOAR
+    word = "BOAR" if lang == "en" else "КАБАН"
     f = ImageFont.truetype(BLACK, 96)
-    d.text((S / 2 + 3, 455 + 3), "КАБАН", font=f, fill=(40, 22, 6), anchor="mm")
-    d.text((S / 2, 455), "КАБАН", font=f, fill=GOLD, anchor="mm")
+    d.text((S / 2 + 3, 455 + 3), word, font=f, fill=(40, 22, 6), anchor="mm")
+    d.text((S / 2, 455), word, font=f, fill=GOLD, anchor="mm")
     return img.convert("RGB")
 
 # ---------- ОБЛОЖКА 800x470 ----------
-def make_cover():
+def make_cover(lang="ru"):
     W, H = 800, 470
     img = vgrad((W, H), (61, 39, 22), (17, 11, 7)).convert("RGBA")
     # деревянные полосы-фон
@@ -106,24 +107,27 @@ def make_cover():
     fries = emoji_img("🍟", 84)
     paste_center(img, fries, 232, 398)
 
-    # ООО
+    en = (lang == "en")
+    # ООО / LLC
     fo = ImageFont.truetype(BOLD, 22)
-    d.text((470, 108), "О О О", font=fo, fill=(169, 138, 107), anchor="mm")
+    d.text((470, 108), "L L C" if en else "О О О", font=fo, fill=(169, 138, 107), anchor="mm")
     # заголовок
     ft = ImageFont.truetype(BLACK, 78)
-    for line, y in (("«КАБАН", 185), ("БЛИН»", 268)):
+    title_lines = (("«BOAR", 185), ("BLIN»", 268)) if en else (("«КАБАН", 185), ("БЛИН»", 268))
+    for line, y in title_lines:
         d.text((470 + 3, y + 3), line, font=ft, fill=(40, 22, 6), anchor="mm")
         d.text((470, y), line, font=ft, fill=GOLD, anchor="mm")
     # подзаголовок-плашка
     d.rounded_rectangle((330, 325, 610, 372), radius=12, fill=(42, 26, 14), outline=LINE, width=2)
     fs = ImageFont.truetype(BOLD, 25)
-    d.text((470, 349), "ЧИПСЫ  КАБАНА", font=fs, fill=GOLD2, anchor="mm")
+    d.text((470, 349), "BOAR  CHIPS" if en else "ЧИПСЫ  КАБАНА", font=fs, fill=GOLD2, anchor="mm")
     fh = ImageFont.truetype(BOLD, 18)
-    d.text((510, 402), "торгуй за прилавком • ХРУСТИМ С 1997", font=fh, fill=(169, 138, 107), anchor="mm")
+    tag = "mind the counter • CRUNCHING SINCE 1997" if en else "торгуй за прилавком • ХРУСТИМ С 1997"
+    d.text((510, 402), tag, font=fh, fill=(169, 138, 107), anchor="mm")
     return img.convert("RGB")
 
-icon = make_icon()
-icon.save(os.path.join(OUT, "icon-512.png"))
-cover = make_cover()
-cover.save(os.path.join(OUT, "cover-800x470.png"))
-print("saved:", icon.size, cover.size)
+for lg in ("ru", "en"):
+    suf = "" if lg == "ru" else "-en"
+    make_icon(lg).save(os.path.join(OUT, f"icon-512{suf}.png"))
+    make_cover(lg).save(os.path.join(OUT, f"cover-800x470{suf}.png"))
+print("saved ru + en icon/cover")
